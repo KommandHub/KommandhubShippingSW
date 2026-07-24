@@ -1,0 +1,6 @@
+# One entry per module that owns HTTP controllers. Routes themselves are
+# declared with #[Route] attributes on the controller methods.
+kommandhub_shipping_webhook:
+    resource: ../../Webhook/Controller/
+    type: attribute
+

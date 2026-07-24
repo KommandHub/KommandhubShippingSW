@@ -1,0 +1,11 @@
+{
+  "kommandhub-shipping": {
+    "title": "KommandhubShipping for Shopware 6"
+  },
+  "checkout": {
+    "shippingConfigurationError": "This payment method is not configured correctly. Please contact the shop owner."
+  },
+  "error": {
+    "shippingConfigurationError": "This payment method is not configured correctly. Please contact the shop owner."
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "kommandhub-shipping": {
+    "title": "KommandhubShipping for Shopware 6"
+  },
+  "sw-privileges": {
+    "additional_permissions": {
+      "shipping": {
+        "label": "KommandhubShipping for Shopware 6",
+        "manage": "Manage"
+      }
+    }
+  }
+}

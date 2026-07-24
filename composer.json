@@ -1,0 +1,86 @@
+{
+    "name": "kommandhub/shipping-sw",
+    "description": "Real-time delivery rates and multi-carrier fulfilment for African couriers in Shopware 6.",
+    "type": "shopware-platform-plugin",
+    "version": "0.1.0",
+    "license": "Apache-2.0",
+    "keywords": [
+        "shopware",
+        "shopware6",
+        "shopware-plugin",
+        "shipping",
+        "administration",
+        "api-client",
+        "custom-fields",
+        "scheduled-task",
+        "storefront",
+        "webhooks"
+    ],
+    "homepage": "https://github.com/Kommandhub/KommandhubShippingSW",
+    "authors": [
+        {
+            "name": "Kommandhub",
+            "email": "info@kommandhub.com",
+            "homepage": "https://kommandhub.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "info@kommandhub.com",
+        "issues": "https://github.com/Kommandhub/KommandhubShippingSW/issues",
+        "source": "https://github.com/Kommandhub/KommandhubShippingSW",
+        "docs": "https://github.com/Kommandhub/KommandhubShippingSW/blob/main/README.md"
+    },
+    "require": {
+        "php": ">=8.2",
+        "shopware/core": "~6.6.0 || ~6.7.0",
+        "shopware/storefront": "~6.6.0 || ~6.7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5",
+        "shopware/dev-tools": "^1.5",
+        "friendsofphp/php-cs-fixer": "^3.94",
+        "phpstan/phpstan": "^2.1",
+        "rregeer/phpunit-coverage-check": "^0.3.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Kommandhub\\ShippingSW\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Kommandhub\\ShippingSW\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "shopware-plugin-class": "Kommandhub\\ShippingSW\\KommandhubShippingSW",
+        "label": {
+            "de-DE": "Shipping for Shopware 6",
+            "en-GB": "Shipping for Shopware 6",
+            "fr-FR": "Shipping for Shopware 6"
+        },
+        "description": {
+            "de-DE": "Real-time delivery rates and multi-carrier fulfilment for African couriers in Shopware 6.",
+            "en-GB": "Real-time delivery rates and multi-carrier fulfilment for African couriers in Shopware 6.",
+            "fr-FR": "Real-time delivery rates and multi-carrier fulfilment for African couriers in Shopware 6."
+        },
+        "manufacturerLink": {
+            "de-DE": "https://kommandhub.com",
+            "en-GB": "https://kommandhub.com"
+        },
+        "supportLink": {
+            "de-DE": "https://kommandhub.com/support",
+            "en-GB": "https://kommandhub.com/support"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true,
+            "symfony/runtime": true
+        },
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

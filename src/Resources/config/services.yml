@@ -1,0 +1,99 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+    # Give this plugin's services the ConfigurableLogger wherever they type-hint
+    # PSR-3, without touching the container-wide Psr\Log\LoggerInterface alias.
+    #
+    # Aliasing that globally rebinds LoggerInterface for *every* autowired
+    # consumer in the installation, including Shopware core and other plugins.
+    # Two plugins doing it means the last one compiled wins, so sibling plugins
+    # would silently log through each other's logger and each other's debug
+    # toggle. A bind is scoped to the services defined in this file, so it
+    # cannot collide.
+    bind:
+      Psr\Log\LoggerInterface $logger: '@Kommandhub\ShippingSW\Logging\ConfigurableLogger'
+
+  # Any class implementing the provider contract is auto-tagged, so a new
+  # courier adapter is picked up by the registry with zero wiring changes.
+  _instanceof:
+    Kommandhub\ShippingSW\Provider\ShippingProviderInterface:
+      tags: ['kommandhub_shipping.provider']
+
+  Kommandhub\ShippingSW\:
+    resource: '../../*'
+    exclude: '../../{DependencyInjection,Entity,Migration,Model,Tests,Kernel.php}'
+
+  # Strategy resolver: collects every tagged adapter. Explicit because an
+  # iterable argument cannot be autowired.
+  Kommandhub\ShippingSW\Provider\ProviderRegistry:
+    arguments:
+      $providers: !tagged_iterator kommandhub_shipping.provider
+
+  # The explicit $logger argument overrides the bind above, so the wrapper
+  # decorates the real monolog channel instead of recursing into itself.
+  Kommandhub\ShippingSW\Logging\ConfigurableLogger:
+    arguments:
+      $logger: '@monolog.logger.kommandhub_shipping_channel'
+    tags:
+      - { name: 'monolog.logger', channel: 'kommandhub_shipping_channel' }
+
+  # Symfony does not auto-alias an interface to its single implementation.
+  Kommandhub\ShippingSW\Client\Http\HttpClientInterface:
+    alias: Kommandhub\ShippingSW\Client\Http\ShippingHttpClient
+
+  # --- Resilient HTTP transport -------------------------------------------
+  # Wrap the framework http_client with automatic retry of transient failures
+  # (timeouts, 5xx, 429). Timeout + circuit-breaker live in ShippingHttpClient.
+  kommandhub_shipping.http.retryable_client:
+    class: Symfony\Component\HttpClient\RetryableHttpClient
+    arguments:
+      $client: '@http_client'
+
+  Kommandhub\ShippingSW\Client\Http\ShippingHttpClient:
+    arguments:
+      $client: '@kommandhub_shipping.http.retryable_client'
+      $timeoutSeconds: 10
+
+  # Circuit breaker: process-local state by default.
+  Kommandhub\ShippingSW\Client\Http\CircuitBreakerStorage:
+    alias: Kommandhub\ShippingSW\Client\Http\InMemoryCircuitBreakerStorage
+
+  # --- Rate cache ----------------------------------------------------------
+  Kommandhub\ShippingSW\Checkout\Rate\RateCache:
+    alias: Kommandhub\ShippingSW\Checkout\Rate\PsrRateCache
+
+  Kommandhub\ShippingSW\Checkout\Rate\PsrRateCache:
+    arguments:
+      $pool: '@cache.object'
+
+  # --- Correlation-id logging ---------------------------------------------
+  # Shared holder + a processor on the plugin's channel so every line carries
+  # the same id for one shipment operation.
+  Kommandhub\ShippingSW\Logging\CorrelationIdProcessor:
+    tags:
+      - { name: 'monolog.processor', channel: 'kommandhub_shipping_channel' }
+
+  # --- Custom entities (Entity/ is excluded from the autowire glob) ---------
+  Kommandhub\ShippingSW\Entity\Shipment\ShipmentDefinition:
+    tags:
+      - { name: 'shopware.entity.definition' }
+
+  Kommandhub\ShippingSW\Entity\TrackingEvent\ShipmentTrackingEventDefinition:
+    tags:
+      - { name: 'shopware.entity.definition' }
+
+  Kommandhub\ShippingSW\DataAbstractionLayer\ShipmentGateway:
+    arguments:
+      $shipmentRepository: '@kommandhub_shipping_shipment.repository'
+
+  Kommandhub\ShippingSW\ScheduledTask\ShippingSyncTask:
+    tags:
+      - { name: 'shopware.scheduled.task' }
+
+  Kommandhub\ShippingSW\Webhook\Controller\WebhookController:
+    public: true
+    calls:
+      - [setContainer, ['@service_container']]
+

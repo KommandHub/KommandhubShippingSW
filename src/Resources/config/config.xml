@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/6.7/src/Core/System/SystemConfig/Schema/config.xsd">
+
+    <!--
+      Every field here is sales-channel scoped natively: the admin's sales-channel
+      switch on this page lets a NG channel select Terminal Africa and a SA channel
+      select Bob Go, each with its own credentials, with no custom UI code. This is
+      the "per-sales-channel provider config" — SystemConfig, not a custom entity.
+    -->
+    <card>
+        <title>Shipping provider</title>
+        <title lang="de-DE">Versanddienstleister</title>
+
+        <input-field type="single-select">
+            <name>activeProvider</name>
+            <label>Active provider</label>
+            <label lang="de-DE">Aktiver Dienstleister</label>
+            <helpText>The courier integration this sales channel uses.</helpText>
+            <options>
+                <option><id>terminal_africa</id><name>Terminal Africa (Nigeria)</name></option>
+                <option><id>bobgo</id><name>Bob Go (South Africa)</name></option>
+            </options>
+        </input-field>
+
+        <input-field type="bool">
+            <name>enableSandbox</name>
+            <label>Enable sandbox mode</label>
+            <label lang="de-DE">Sandbox-Modus aktivieren</label>
+            <defaultValue>true</defaultValue>
+            <helpText>Use the provider's test environment. Disable before going live.</helpText>
+        </input-field>
+
+        <input-field type="password">
+            <name>apiKey</name>
+            <label>Live API key</label>
+            <label lang="de-DE">Live-API-Schlüssel</label>
+            <helpText>The active provider's live API key. Never share it publicly.</helpText>
+            <copyable>true</copyable>
+        </input-field>
+
+        <input-field type="password">
+            <name>apiKeySandbox</name>
+            <label>Test API key</label>
+            <label lang="de-DE">Test-API-Schlüssel</label>
+            <helpText>Used only while sandbox mode is enabled.</helpText>
+            <copyable>true</copyable>
+        </input-field>
+
+        <input-field type="password">
+            <name>webhookSecret</name>
+            <label>Webhook signing secret</label>
+            <label lang="de-DE">Webhook-Signatur-Geheimnis</label>
+            <helpText>Secret used to verify inbound tracking webhooks from the provider.</helpText>
+            <copyable>true</copyable>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Rates at checkout</title>
+        <title lang="de-DE">Versandkosten im Checkout</title>
+
+        <input-field type="int">
+            <name>rateTimeoutSeconds</name>
+            <label>Rate request timeout (seconds)</label>
+            <label lang="de-DE">Zeitlimit für Ratenabfrage (Sekunden)</label>
+            <defaultValue>4</defaultValue>
+            <helpText>How long to wait for live rates before using the flat-rate fallback.</helpText>
+        </input-field>
+
+        <input-field type="float">
+            <name>flatRateFallback</name>
+            <label>Flat-rate fallback amount</label>
+            <label lang="de-DE">Pauschaler Ausweichbetrag</label>
+            <helpText>Charged when the provider is slow or unavailable. In the sales channel currency.</helpText>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Logging</title>
+        <title lang="de-DE">Protokollierung</title>
+
+        <input-field type="bool">
+            <name>enableDebugging</name>
+            <label>Enable debug logging</label>
+            <label lang="de-DE">Debug-Protokollierung aktivieren</label>
+            <defaultValue>false</defaultValue>
+            <helpText>
+                Writes debug, info and warning entries to var/log/kommandhub_shipping_*.log.
+                Errors are always logged regardless of this setting. Can be scoped
+                to a single sales channel.
+            </helpText>
+            <helpText lang="de-DE">
+                Schreibt Debug-, Info- und Warnungseinträge nach
+                var/log/kommandhub_shipping_*.log. Fehler werden unabhängig von dieser
+                Einstellung immer protokolliert.
+            </helpText>
+        </input-field>
+
+        <input-field type="multi-select">
+            <name>logLevels</name>
+            <label>Log levels</label>
+            <label lang="de-DE">Protokollstufen</label>
+            <helpText>
+                Restrict debug logging to specific PSR-3 levels. Leave empty to
+                log every level once debug logging is enabled.
+            </helpText>
+            <options>
+                <option><id>debug</id><name>Debug</name></option>
+                <option><id>info</id><name>Info</name></option>
+                <option><id>notice</id><name>Notice</name></option>
+                <option><id>warning</id><name>Warning</name></option>
+            </options>
+        </input-field>
+    </card>
+</config>
