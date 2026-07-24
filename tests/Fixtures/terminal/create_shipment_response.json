@@ -1,0 +1,10 @@
+{
+    "status": true,
+    "message": "Shipment created",
+    "data": {
+        "shipment_id": "ship_abc123",
+        "status": "confirmed",
+        "tracking_number": "TA-TRK-001",
+        "tracking_url": "https://track.terminal.africa/TA-TRK-001"
+    }
+}

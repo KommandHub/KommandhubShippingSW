@@ -60,9 +60,26 @@ services:
   Kommandhub\ShippingSW\Client\Http\CircuitBreakerStorage:
     alias: Kommandhub\ShippingSW\Client\Http\InMemoryCircuitBreakerStorage
 
+  # --- Terminal Africa provider (Phase 1) ----------------------------------
+  # The adapter is auto-tagged via _instanceof, so ProviderRegistry finds it.
+  Kommandhub\ShippingSW\Provider\TerminalAfrica\TerminalTransport:
+    alias: Kommandhub\ShippingSW\Provider\TerminalAfrica\HttpTerminalTransport
+
+  Kommandhub\ShippingSW\Provider\TerminalAfrica\HttpTerminalTransport:
+    arguments:
+      $client: '@kommandhub_shipping.http.retryable_client'
+      $timeoutSeconds: 4
+
   # --- Rate cache ----------------------------------------------------------
   Kommandhub\ShippingSW\Checkout\Rate\RateCache:
     alias: Kommandhub\ShippingSW\Checkout\Rate\PsrRateCache
+
+  # Live rates at checkout: decorate the core delivery processor so the shipping
+  # cost comes from the aggregator (with its flat-rate fallback).
+  Kommandhub\ShippingSW\Checkout\Rate\LiveRateDeliveryProcessor:
+    decorates: Shopware\Core\Checkout\Cart\Delivery\DeliveryProcessor
+    arguments:
+      $decorated: '@.inner'
 
   Kommandhub\ShippingSW\Checkout\Rate\PsrRateCache:
     arguments:
@@ -87,6 +104,7 @@ services:
   Kommandhub\ShippingSW\DataAbstractionLayer\ShipmentGateway:
     arguments:
       $shipmentRepository: '@kommandhub_shipping_shipment.repository'
+      $trackingEventRepository: '@kommandhub_shipping_tracking_event.repository'
 
   Kommandhub\ShippingSW\ScheduledTask\ShippingSyncTask:
     tags:
@@ -96,4 +114,20 @@ services:
     public: true
     calls:
       - [setContainer, ['@service_container']]
+
+  Kommandhub\ShippingSW\Webhook\Controller\TerminalWebhookController:
+    public: true
+    calls:
+      - [setContainer, ['@service_container']]
+
+  Kommandhub\ShippingSW\Checkout\Tracking\TrackingPipeline:
+    arguments:
+      $orderDeliveryRepository: '@order_delivery.repository'
+
+  Kommandhub\ShippingSW\Checkout\Shipment\OrderShipmentRequestFactory:
+    arguments:
+      $orderRepository: '@order.repository'
+
+  Kommandhub\ShippingSW\Administration\Controller\ShipmentController:
+    public: true
 

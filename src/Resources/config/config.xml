@@ -74,6 +74,30 @@
             <label lang="de-DE">Pauschaler Ausweichbetrag</label>
             <helpText>Charged when the provider is slow or unavailable. In the sales channel currency.</helpText>
         </input-field>
+
+        <input-field type="float">
+            <name>rateMarkupPercent</name>
+            <label>Rate markup (%)</label>
+            <label lang="de-DE">Aufschlag (%)</label>
+            <defaultValue>0</defaultValue>
+            <helpText>Percentage added to every live carrier rate before it is shown.</helpText>
+        </input-field>
+
+        <input-field type="float">
+            <name>rateHandlingFee</name>
+            <label>Handling fee</label>
+            <label lang="de-DE">Bearbeitungsgebühr</label>
+            <defaultValue>0</defaultValue>
+            <helpText>Flat amount added to every live rate, in the sales channel currency.</helpText>
+        </input-field>
+
+        <input-field type="int">
+            <name>rateCacheTtlSeconds</name>
+            <label>Rate cache lifetime (seconds)</label>
+            <label lang="de-DE">Cache-Dauer für Raten (Sekunden)</label>
+            <defaultValue>900</defaultValue>
+            <helpText>How long a quote set is reused before re-querying the provider.</helpText>
+        </input-field>
     </card>
 
     <card>

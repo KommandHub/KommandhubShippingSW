@@ -1,0 +1,8 @@
+{
+    "status": true,
+    "data": {
+        "pickup_id": "pick_789",
+        "status": "scheduled",
+        "pickup_date": "2026-01-05T10:00:00+00:00"
+    }
+}

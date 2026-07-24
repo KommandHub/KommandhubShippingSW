@@ -4,3 +4,7 @@ kommandhub_shipping_webhook:
     resource: ../../Webhook/Controller/
     type: attribute
 
+kommandhub_shipping_admin:
+    resource: ../../Administration/Controller/
+    type: attribute
+

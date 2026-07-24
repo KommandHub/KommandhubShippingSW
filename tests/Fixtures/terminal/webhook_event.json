@@ -1,0 +1,10 @@
+{
+    "event": "shipment.status.updated",
+    "data": {
+        "tracking_number": "TA-TRK-001",
+        "status": "delivered",
+        "description": "Delivered to recipient",
+        "location": "Abuja",
+        "datetime": "2026-01-04T14:00:00+00:00"
+    }
+}
