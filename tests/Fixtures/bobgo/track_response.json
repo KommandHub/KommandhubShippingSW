@@ -1,0 +1,25 @@
+{
+    "tracking": {
+        "reference": "BG-REF-77",
+        "checkpoints": [
+            {
+                "status": "in-transit",
+                "message": "At sorting hub",
+                "location": "Johannesburg",
+                "timestamp": "2026-02-02T08:00:00+00:00"
+            },
+            {
+                "status": "collected",
+                "message": "Collected from sender",
+                "location": "Cape Town",
+                "timestamp": "2026-02-01T08:00:00+00:00"
+            },
+            {
+                "status": "delivered",
+                "message": "Delivered to recipient",
+                "location": "Durban",
+                "timestamp": "2026-02-03T15:00:00+00:00"
+            }
+        ]
+    }
+}

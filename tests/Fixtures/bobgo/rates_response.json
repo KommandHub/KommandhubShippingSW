@@ -1,0 +1,23 @@
+{
+    "message": "ok",
+    "rates": [
+        {
+            "service_level_code": "ECO",
+            "service_level_name": "Economy",
+            "rate": "89.00",
+            "currency": "ZAR",
+            "min_delivery_days": 3,
+            "max_delivery_days": 5,
+            "provider": "The Courier Guy"
+        },
+        {
+            "service_level_code": "EXP",
+            "service_level_name": "Express",
+            "rate": "149.50",
+            "currency": "ZAR",
+            "min_delivery_days": 1,
+            "max_delivery_days": 2,
+            "provider": "Fastway"
+        }
+    ]
+}

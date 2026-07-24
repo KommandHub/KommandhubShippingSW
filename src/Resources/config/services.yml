@@ -70,6 +70,16 @@ services:
       $client: '@kommandhub_shipping.http.retryable_client'
       $timeoutSeconds: 4
 
+  # --- Bob Go provider (Phase 2 — zero core changes) -----------------------
+  # Same wiring shape as Terminal; the adapter is auto-tagged via _instanceof.
+  Kommandhub\ShippingSW\Provider\BobGo\BobGoTransport:
+    alias: Kommandhub\ShippingSW\Provider\BobGo\HttpBobGoTransport
+
+  Kommandhub\ShippingSW\Provider\BobGo\HttpBobGoTransport:
+    arguments:
+      $client: '@kommandhub_shipping.http.retryable_client'
+      $timeoutSeconds: 4
+
   # --- Rate cache ----------------------------------------------------------
   Kommandhub\ShippingSW\Checkout\Rate\RateCache:
     alias: Kommandhub\ShippingSW\Checkout\Rate\PsrRateCache
@@ -116,6 +126,11 @@ services:
       - [setContainer, ['@service_container']]
 
   Kommandhub\ShippingSW\Webhook\Controller\TerminalWebhookController:
+    public: true
+    calls:
+      - [setContainer, ['@service_container']]
+
+  Kommandhub\ShippingSW\Webhook\Controller\BobGoWebhookController:
     public: true
     calls:
       - [setContainer, ['@service_container']]

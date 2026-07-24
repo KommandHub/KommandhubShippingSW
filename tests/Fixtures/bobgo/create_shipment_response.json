@@ -1,0 +1,9 @@
+{
+    "message": "created",
+    "shipment": {
+        "id": "bg_ship_55",
+        "status": "collected",
+        "tracking_reference": "BG-REF-77",
+        "tracking_url": "https://track.bobgo.co.za/BG-REF-77"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "event": "tracking.updated",
+    "data": {
+        "tracking_reference": "BG-REF-77",
+        "status": "delivered",
+        "message": "Delivered to recipient",
+        "location": "Durban",
+        "timestamp": "2026-02-03T15:00:00+00:00"
+    }
+}
