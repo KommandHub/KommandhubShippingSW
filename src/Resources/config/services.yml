@@ -91,6 +91,15 @@ services:
     arguments:
       $decorated: '@.inner'
 
+  # Customer's per-cart carrier choice, kept in the storefront session.
+  Kommandhub\ShippingSW\Checkout\Rate\CarrierSelectionStore:
+    alias: Kommandhub\ShippingSW\Checkout\Rate\SessionCarrierSelectionStore
+
+  Kommandhub\ShippingSW\Checkout\Rate\Controller\CarrierSelectionController:
+    public: true
+    calls:
+      - [setContainer, ['@service_container']]
+
   Kommandhub\ShippingSW\Checkout\Rate\PsrRateCache:
     arguments:
       $pool: '@cache.object'
@@ -144,5 +153,8 @@ services:
       $orderRepository: '@order.repository'
 
   Kommandhub\ShippingSW\Administration\Controller\ShipmentController:
+    public: true
+
+  Kommandhub\ShippingSW\Administration\Controller\CarrierController:
     public: true
 

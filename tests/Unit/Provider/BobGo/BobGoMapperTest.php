@@ -40,6 +40,14 @@ final class BobGoMapperTest extends TestCase
         self::assertSame(8900, $cheapest->amount->minorAmount);
         self::assertSame(Currency::ZAR, $cheapest->amount->currency);
         self::assertSame('The Courier Guy', $cheapest->carrierName);
+        self::assertSame('tcg', $cheapest->carrierCode);
+    }
+
+    public function testCarriersMapToCanonicalCatalogue(): void
+    {
+        $carriers = $this->mapper->toCarriers($this->fixture('providers_response'));
+
+        self::assertSame(['tcg', 'fastway', 'aramex'], $carriers->codes());
     }
 
     public function testShipmentMapsStatusAndTracking(): void

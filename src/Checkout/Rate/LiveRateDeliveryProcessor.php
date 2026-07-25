@@ -4,11 +4,7 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Checkout\Rate;
 
-use Kommandhub\ShippingSW\Model\Rate\RateRequest;
-use Kommandhub\ShippingSW\Model\ValueObject\Address;
-use Kommandhub\ShippingSW\Model\ValueObject\Currency;
-use Kommandhub\ShippingSW\Model\ValueObject\Dimensions;
-use Kommandhub\ShippingSW\Model\ValueObject\Weight;
+use Kommandhub\ShippingSW\Util\ShippingConstants;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Checkout\Cart\Cart;
 use Shopware\Core\Checkout\Cart\CartBehavior;
@@ -21,26 +17,23 @@ use Shopware\Core\Checkout\Cart\Tax\Struct\TaxRuleCollection;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 
 /**
- * Decorates the core DeliveryProcessor to replace the delivery cost with a live,
- * provider-sourced rate. The core runs first (so a working baseline always
- * exists); then, when we can build a canonical RateRequest from the cart, the
- * aggregator's cheapest priced quote overrides the shipping cost. The aggregator
- * itself guarantees a flat-rate fallback, so this never leaves checkout without
- * a price.
+ * Decorates the core DeliveryProcessor to price the delivery from a live,
+ * provider-sourced rate — but ONLY for our gate shipping method. The core runs
+ * first (baseline always exists); then, if the cart's selected method is ours,
+ * we price the customer's chosen carrier (or cheapest allowed if none picked)
+ * from the aggregator, which already applied the owner's allow-list and
+ * guarantees a flat-rate fallback.
  *
- * It degrades silently to the core price when: the currency is outside the
- * supported set, there is no shipping address yet, or the origin warehouse is
- * unconfigured — checkout must never break because of live rating.
- *
- * ponytail: origin/parcel dimensions are placeholders here (warehouse origin +
- * real parcel packing are merchant configuration). Wire them from config before
- * go-live; marked TODO below.
+ * Degrades silently to the core price when the method isn't ours, the currency
+ * is unsupported, or there's no shipping address yet — checkout never breaks.
  */
 final class LiveRateDeliveryProcessor implements CartProcessorInterface, CartDataCollectorInterface
 {
     public function __construct(
         private readonly CartProcessorInterface&CartDataCollectorInterface $decorated,
         private readonly RateAggregator $aggregator,
+        private readonly CartRateRequestFactory $rateRequestFactory,
+        private readonly CarrierSelectionStore $carrierSelection,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -54,73 +47,41 @@ final class LiveRateDeliveryProcessor implements CartProcessorInterface, CartDat
     {
         $this->decorated->process($data, $original, $toCalculate, $context, $behavior);
 
-        $request = $this->buildRateRequest($toCalculate, $context);
+        // Activation gate (requirement 1): provider logic runs ONLY when the
+        // cart's selected shipping method is ours. Self-pickup, flat-rate, and
+        // every other method keep the core price and never trigger a provider.
+        if ($context->getShippingMethod()->getTechnicalName() !== ShippingConstants::SHIPPING_METHOD_TECHNICAL_NAME) {
+            return;
+        }
+
+        $request = $this->rateRequestFactory->fromCart($toCalculate, $context);
         if (null === $request) {
             return;
         }
 
         try {
+            // Already allow-list filtered + priced + sorted by the aggregator.
             $quotes = $this->aggregator->quote($request, $context->getSalesChannelId());
-            $cheapest = $quotes->sortedByPrice()->cheapest();
         } catch (\Throwable $e) {
             $this->logger->warning('Live rating skipped; keeping core delivery price', ['error' => $e->getMessage()]);
 
             return;
         }
 
-        if (null === $cheapest) {
+        // The customer's chosen carrier if they picked one, else cheapest allowed.
+        $selectedCode = $this->carrierSelection->get($original->getToken());
+        $chosen = null !== $selectedCode ? $quotes->firstWithCarrierCode($selectedCode) : null;
+        $chosen ??= $quotes->cheapest();
+
+        if (null === $chosen) {
             return;
         }
 
-        $amount = $cheapest->amount->minorAmount / $cheapest->amount->currency->subunitFactor();
+        $amount = $chosen->amount->minorAmount / $chosen->amount->currency->subunitFactor();
         $price = new CalculatedPrice($amount, $amount, new CalculatedTaxCollection(), new TaxRuleCollection());
 
         foreach ($toCalculate->getDeliveries() as $delivery) {
             $delivery->setShippingCosts($price);
         }
-    }
-
-    private function buildRateRequest(Cart $cart, SalesChannelContext $context): ?RateRequest
-    {
-        $currency = Currency::tryFrom($context->getCurrency()->getIsoCode());
-        if (null === $currency) {
-            return null; // unsupported currency → leave the core price
-        }
-
-        $shippingAddress = $context->getShippingLocation()->getAddress();
-        if (null === $shippingAddress || null === $shippingAddress->getCountry()) {
-            return null;
-        }
-
-        $destination = new Address(
-            countryCode: (string) $shippingAddress->getCountry()->getIso(),
-            city: (string) $shippingAddress->getCity(),
-            line1: (string) $shippingAddress->getStreet(),
-            postalCode: $shippingAddress->getZipcode(),
-        );
-
-        // TODO: origin from merchant warehouse config; placeholder for now.
-        $origin = new Address(countryCode: (string) $shippingAddress->getCountry()->getIso(), city: 'Warehouse', line1: 'Warehouse');
-
-        return new RateRequest(
-            origin: $origin,
-            destination: $destination,
-            weight: Weight::fromGrams($this->cartWeightGrams($cart)),
-            dimensions: Dimensions::fromCentimeters(30, 20, 10), // TODO: real parcel packing
-            currency: $currency,
-        );
-    }
-
-    private function cartWeightGrams(Cart $cart): int
-    {
-        $kg = 0.0;
-        foreach ($cart->getLineItems()->getFlat() as $lineItem) {
-            $weight = $lineItem->getDeliveryInformation()?->getWeight();
-            if (null !== $weight) {
-                $kg += $weight * $lineItem->getQuantity();
-            }
-        }
-
-        return (int) round($kg * 1000);
     }
 }

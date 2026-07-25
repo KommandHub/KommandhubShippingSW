@@ -8,7 +8,8 @@
             "currency": "ZAR",
             "min_delivery_days": 3,
             "max_delivery_days": 5,
-            "provider": "The Courier Guy"
+            "provider": "The Courier Guy",
+            "provider_slug": "tcg"
         },
         {
             "service_level_code": "EXP",
@@ -17,7 +18,8 @@
             "currency": "ZAR",
             "min_delivery_days": 1,
             "max_delivery_days": 2,
-            "provider": "Fastway"
+            "provider": "Fastway",
+            "provider_slug": "fastway"
         }
     ]
 }

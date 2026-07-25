@@ -39,6 +39,7 @@ final readonly class RateMarkup
             estimatedDaysMin: $quote->estimatedDaysMin,
             estimatedDaysMax: $quote->estimatedDaysMax,
             carrierName: $quote->carrierName,
+            carrierCode: $quote->carrierCode,
         );
     }
 }

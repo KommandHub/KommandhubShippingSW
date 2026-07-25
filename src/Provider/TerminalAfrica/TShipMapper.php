@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Provider\TerminalAfrica;
 
+use Kommandhub\ShippingSW\Model\Carrier\Carrier;
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
 use Kommandhub\ShippingSW\Model\Pickup\Pickup;
 use Kommandhub\ShippingSW\Model\Pickup\PickupRequest;
 use Kommandhub\ShippingSW\Model\Rate\RateQuote;
@@ -73,10 +75,36 @@ final class TShipMapper
                 estimatedDaysMin: isset($rate['delivery_days_min']) ? (int) $rate['delivery_days_min'] : null,
                 estimatedDaysMax: isset($rate['delivery_days_max']) ? (int) $rate['delivery_days_max'] : null,
                 carrierName: isset($rate['carrier_name']) ? (string) $rate['carrier_name'] : null,
+                carrierCode: isset($rate['carrier_slug']) ? (string) $rate['carrier_slug'] : null,
             );
         }
 
         return new RateQuoteCollection(...$quotes);
+    }
+
+    // --- Carriers ------------------------------------------------------------
+
+    /**
+     * @param array<string, mixed> $response
+     */
+    public function toCarriers(array $response): CarrierCollection
+    {
+        $list = $this->dataList($response);
+
+        $carriers = [];
+        foreach ($list as $carrier) {
+            $code = $carrier['carrier_slug'] ?? $carrier['slug'] ?? $carrier['id'] ?? null;
+            if (null === $code) {
+                continue;
+            }
+            $carriers[] = new Carrier(
+                code: (string) $code,
+                name: (string) ($carrier['name'] ?? $carrier['carrier_name'] ?? $code),
+                logoUrl: isset($carrier['logo']) ? (string) $carrier['logo'] : null,
+            );
+        }
+
+        return new CarrierCollection(...$carriers);
     }
 
     // --- Shipment ------------------------------------------------------------

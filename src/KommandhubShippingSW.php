@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kommandhub\ShippingSW;
 
 use Kommandhub\ShippingSW\Installer\CustomFieldsInstaller;
+use Kommandhub\ShippingSW\Installer\ShippingMethodInstaller;
 use Shopware\Core\Framework\Context;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
 use Shopware\Core\Framework\Plugin;
@@ -103,14 +104,19 @@ class KommandhubShippingSW extends Plugin
     public function activate(ActivateContext $activateContext): void
     {
         parent::activate($activateContext);
+
+        $this->getShippingMethodInstaller()->setActive(true, $activateContext->getContext());
     }
 
     /**
-     * Plugin deactivation lifecycle hook.
+     * Plugin deactivation lifecycle hook. The gate shipping method is disabled
+     * so it stops appearing at checkout while the plugin is off.
      */
     public function deactivate(DeactivateContext $deactivateContext): void
     {
         parent::deactivate($deactivateContext);
+
+        $this->getShippingMethodInstaller()->setActive(false, $deactivateContext->getContext());
     }
 
     /**
@@ -138,6 +144,22 @@ class KommandhubShippingSW extends Plugin
         $installer = $this->getCustomFieldsInstaller();
         $installer->install($context);
         $installer->addRelations($context);
+
+        $this->getShippingMethodInstaller()->install($context);
+    }
+
+    private function getShippingMethodInstaller(): ShippingMethodInstaller
+    {
+        $container = $this->requireContainer();
+
+        $shippingMethodRepo = $container->get('shipping_method.repository');
+        $deliveryTimeRepo = $container->get('delivery_time.repository');
+
+        if (!$shippingMethodRepo instanceof EntityRepository || !$deliveryTimeRepo instanceof EntityRepository) {
+            throw new \RuntimeException('Invalid repository services.'); // @codeCoverageIgnore
+        }
+
+        return new ShippingMethodInstaller($shippingMethodRepo, $deliveryTimeRepo);
     }
 
     /**

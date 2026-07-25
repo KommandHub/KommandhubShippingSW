@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Tests\Support;
 
+use Kommandhub\ShippingSW\Model\Carrier\Carrier;
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
 use Kommandhub\ShippingSW\Model\Pickup\Pickup;
 use Kommandhub\ShippingSW\Model\Pickup\PickupRequest;
 use Kommandhub\ShippingSW\Model\Rate\RateQuote;
@@ -49,6 +51,7 @@ final class MockProvider implements ShippingProviderInterface
             Capability::SCHEDULE_PICKUP,
             Capability::TRACK,
             Capability::VERIFY_WEBHOOK,
+            Capability::LIST_CARRIERS,
         ],
     ) {
     }
@@ -70,8 +73,18 @@ final class MockProvider implements ShippingProviderInterface
         $base = 150000 + $request->weight->grams; // minor units, deterministic
 
         return new RateQuoteCollection(
-            new RateQuote($this->key, 'express', 'Mock Express', Money::fromMinor($base + 50000, $request->currency), 1, 2, 'MockCarrier'),
-            new RateQuote($this->key, 'standard', 'Mock Standard', Money::fromMinor($base, $request->currency), 3, 5, 'MockCarrier'),
+            new RateQuote($this->key, 'express', 'Mock Express', Money::fromMinor($base + 50000, $request->currency), 1, 2, 'Mock Express Co', 'mock_express'),
+            new RateQuote($this->key, 'standard', 'Mock Standard', Money::fromMinor($base, $request->currency), 3, 5, 'Mock Standard Co', 'mock_standard'),
+        );
+    }
+
+    public function listCarriers(ProviderContext $context): CarrierCollection
+    {
+        $this->guard(Capability::LIST_CARRIERS);
+
+        return new CarrierCollection(
+            new Carrier('mock_express', 'Mock Express Co'),
+            new Carrier('mock_standard', 'Mock Standard Co'),
         );
     }
 

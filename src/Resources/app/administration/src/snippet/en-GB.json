@@ -1,6 +1,14 @@
 {
   "kommandhub-shipping": {
-    "title": "KommandhubShipping for Shopware 6"
+    "title": "KommandhubShipping for Shopware 6",
+    "config": {
+      "allowedCarriers": {
+        "label": "Allowed carriers",
+        "helpText": "Only these carriers from the selected provider are offered to customers at checkout. Leave empty to allow all.",
+        "placeholder": "Select carriers…",
+        "emptyState": "No carriers loaded. Choose and save a provider first, then reopen this page."
+      }
+    }
   },
   "sw-privileges": {
     "additional_permissions": {

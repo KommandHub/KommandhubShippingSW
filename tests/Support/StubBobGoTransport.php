@@ -29,6 +29,7 @@ final class StubBobGoTransport implements BobGoTransport
         $this->calls[] = ['method' => $method, 'path' => $path, 'body' => $body];
 
         return match (true) {
+            str_contains($path, '/providers') => self::fixture('providers_response'),
             str_contains($path, '/rates') => self::fixture('rates_response'),
             str_contains($path, '/tracking/') => self::fixture('track_response'),
             str_contains($path, '/shipments/') => self::fixture('label_response'),

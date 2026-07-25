@@ -31,6 +31,7 @@ final class StubTerminalTransport implements TerminalTransport
 
         return match (true) {
             str_contains($path, '/rates/') => self::fixture('rates_response'),
+            str_contains($path, '/carriers') => self::fixture('carriers_response'),
             str_contains($path, '/shipments/pickup') => self::fixture('pickup_response'),
             str_contains($path, '/label') => self::fixture('label_response'),
             str_contains($path, '/track/') => self::fixture('track_response'),

@@ -1,0 +1,7 @@
+{
+    "providers": [
+        { "code": "tcg", "name": "The Courier Guy", "logo_url": "https://cdn.bobgo.co.za/tcg.png" },
+        { "code": "fastway", "name": "Fastway", "logo_url": "https://cdn.bobgo.co.za/fastway.png" },
+        { "code": "aramex", "name": "Aramex", "logo_url": "https://cdn.bobgo.co.za/aramex.png" }
+    ]
+}

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Provider\BobGo;
 
+use Kommandhub\ShippingSW\Model\Carrier\Carrier;
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
 use Kommandhub\ShippingSW\Model\Rate\RateQuote;
 use Kommandhub\ShippingSW\Model\Rate\RateQuoteCollection;
 use Kommandhub\ShippingSW\Model\Rate\RateRequest;
@@ -67,10 +69,35 @@ final class BobGoMapper
                 estimatedDaysMin: isset($rate['min_delivery_days']) ? (int) $rate['min_delivery_days'] : null,
                 estimatedDaysMax: isset($rate['max_delivery_days']) ? (int) $rate['max_delivery_days'] : null,
                 carrierName: isset($rate['provider']) ? (string) $rate['provider'] : null,
+                carrierCode: isset($rate['provider_slug']) ? (string) $rate['provider_slug'] : null,
             );
         }
 
         return new RateQuoteCollection(...$quotes);
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     */
+    public function toCarriers(array $response): CarrierCollection
+    {
+        /** @var list<array<string, mixed>> $providers */
+        $providers = \is_array($response['providers'] ?? null) ? array_values(array_filter($response['providers'], '\is_array')) : [];
+
+        $carriers = [];
+        foreach ($providers as $provider) {
+            $code = $provider['code'] ?? $provider['slug'] ?? $provider['id'] ?? null;
+            if (null === $code) {
+                continue;
+            }
+            $carriers[] = new Carrier(
+                code: (string) $code,
+                name: (string) ($provider['name'] ?? $code),
+                logoUrl: isset($provider['logo_url']) ? (string) $provider['logo_url'] : null,
+            );
+        }
+
+        return new CarrierCollection(...$carriers);
     }
 
     /**

@@ -8,3 +8,7 @@ kommandhub_shipping_admin:
     resource: ../../Administration/Controller/
     type: attribute
 
+kommandhub_shipping_checkout:
+    resource: ../../Checkout/Rate/Controller/
+    type: attribute
+

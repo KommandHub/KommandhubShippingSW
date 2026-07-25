@@ -7,7 +7,11 @@ Shopware.Locale.extend('de-DE', deDE);
 Shopware.Locale.extend('fr-FR', frFR);
 
 import './acl';
+import './component/kommandhub-shipping-carrier-select';
+import CarrierApiService from './service/carrier-api.service';
 
-// Register modules, views and services below, one import per directory, e.g.
-//   import './module/sw-order/page/sw-order-detail';
-//   Shopware.Service().register('shippingService', container => { ... });
+// Carrier catalogue API service, consumed by the allowed-carriers config field.
+Shopware.Application.addServiceProvider('carrierApiService', (container) => {
+    const initContainer = Shopware.Application.getContainer('init');
+    return new CarrierApiService(initContainer.httpClient, container.loginService);
+});

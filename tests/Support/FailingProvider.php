@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Tests\Support;
 
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
 use Kommandhub\ShippingSW\Model\Pickup\Pickup;
 use Kommandhub\ShippingSW\Model\Pickup\PickupRequest;
 use Kommandhub\ShippingSW\Model\Rate\RateQuoteCollection;
@@ -38,6 +39,11 @@ final class FailingProvider implements ShippingProviderInterface
     }
 
     public function getRates(RateRequest $request, ProviderContext $context): RateQuoteCollection
+    {
+        throw new ProviderException('simulated outage');
+    }
+
+    public function listCarriers(ProviderContext $context): CarrierCollection
     {
         throw new ProviderException('simulated outage');
     }

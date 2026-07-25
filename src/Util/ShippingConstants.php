@@ -15,6 +15,14 @@ namespace Kommandhub\ShippingSW\Util;
  */
 final class ShippingConstants
 {
+    /**
+     * technicalName of the plugin's gate shipping method. Provider logic (rate
+     * lookups, carrier selection) runs ONLY when the cart's selected shipping
+     * method has this technicalName — so self-pickup / flat-rate methods never
+     * trigger provider calls.
+     */
+    public const SHIPPING_METHOD_TECHNICAL_NAME = 'kommandhub_shipping_dynamic';
+
     public const CUSTOM_FIELD_SET = 'kommandhub_shipping_fieldset';
 
     public const CUSTOM_FIELD_REFERENCE = 'kommandhub_shipping_reference';

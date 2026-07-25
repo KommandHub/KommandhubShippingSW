@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Provider;
 
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
 use Kommandhub\ShippingSW\Model\Pickup\Pickup;
 use Kommandhub\ShippingSW\Model\Pickup\PickupRequest;
 use Kommandhub\ShippingSW\Model\Rate\RateQuoteCollection;
@@ -42,6 +43,16 @@ interface ShippingProviderInterface
      * @throws ProviderException on transport/mapping failure
      */
     public function getRates(RateRequest $request, ProviderContext $context): RateQuoteCollection;
+
+    /**
+     * The provider's available carriers, independent of any cart — the catalogue
+     * a store owner filters into an allow-list. RateQuote::$carrierCode values
+     * are drawn from this same code space so quotes can be filtered against it.
+     *
+     * @throws UnsupportedCapabilityException
+     * @throws ProviderException
+     */
+    public function listCarriers(ProviderContext $context): CarrierCollection;
 
     /**
      * Book a shipment. MUST be idempotent on $request->idempotencyKey: a repeat

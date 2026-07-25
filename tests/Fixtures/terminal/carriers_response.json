@@ -1,0 +1,9 @@
+{
+    "status": true,
+    "message": "Carriers retrieved",
+    "data": [
+        { "carrier_slug": "gig", "name": "GIG Logistics", "logo": "https://cdn.terminal.africa/gig.png" },
+        { "carrier_slug": "dhl", "name": "DHL", "logo": "https://cdn.terminal.africa/dhl.png" },
+        { "carrier_slug": "ups", "name": "UPS", "logo": "https://cdn.terminal.africa/ups.png" }
+    ]
+}

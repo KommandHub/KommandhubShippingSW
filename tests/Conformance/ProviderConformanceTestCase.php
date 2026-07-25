@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Tests\Conformance;
 
+use Kommandhub\ShippingSW\Model\Carrier\Carrier;
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
 use Kommandhub\ShippingSW\Model\Pickup\Pickup;
 use Kommandhub\ShippingSW\Model\Pickup\PickupRequest;
 use Kommandhub\ShippingSW\Model\Rate\RateQuote;
@@ -91,6 +93,25 @@ abstract class ProviderConformanceTestCase extends TestCase
 
         if (!$quotes->isEmpty()) {
             self::assertSame($quotes->sortedByPrice()->all()[0], $quotes->cheapest());
+        }
+    }
+
+    public function testListCarriersContract(): void
+    {
+        $provider = $this->provider();
+
+        if (!$provider->supports(Capability::LIST_CARRIERS)) {
+            $this->expectException(UnsupportedCapabilityException::class);
+            $provider->listCarriers($this->context());
+
+            return;
+        }
+
+        $carriers = $provider->listCarriers($this->context());
+        self::assertInstanceOf(CarrierCollection::class, $carriers);
+        foreach ($carriers as $carrier) {
+            self::assertInstanceOf(Carrier::class, $carrier);
+            self::assertNotSame('', $carrier->code, 'Carrier code must be non-empty for allow-list matching.');
         }
     }
 

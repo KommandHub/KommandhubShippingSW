@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Provider\TerminalAfrica;
 
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
 use Kommandhub\ShippingSW\Model\Pickup\Pickup;
 use Kommandhub\ShippingSW\Model\Pickup\PickupRequest;
 use Kommandhub\ShippingSW\Model\Rate\RateQuoteCollection;
@@ -51,6 +52,13 @@ final class TerminalAfricaAdapter implements ShippingProviderInterface
         $response = $this->transport->request('POST', '/rates/shipment', $this->mapper->ratesRequestPayload($request), $context);
 
         return $this->mapper->toRateQuotes($response, $request->currency);
+    }
+
+    public function listCarriers(ProviderContext $context): CarrierCollection
+    {
+        $response = $this->transport->request('GET', '/carriers', [], $context);
+
+        return $this->mapper->toCarriers($response);
     }
 
     public function createShipment(ShipmentRequest $request, ProviderContext $context): Shipment

@@ -19,4 +19,6 @@ enum Capability
     case SCHEDULE_PICKUP;
     case TRACK;
     case VERIFY_WEBHOOK;
+    /** List the provider's available carriers (for the owner's allow-list). */
+    case LIST_CARRIERS;
 }

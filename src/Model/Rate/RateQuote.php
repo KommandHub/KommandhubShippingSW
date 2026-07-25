@@ -21,6 +21,8 @@ final readonly class RateQuote
         public ?int $estimatedDaysMin = null,
         public ?int $estimatedDaysMax = null,
         public ?string $carrierName = null,
+        // Stable carrier identifier, matched against the owner's allow-list.
+        public ?string $carrierCode = null,
     ) {
     }
 }

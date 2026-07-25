@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Provider\BobGo;
 
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
 use Kommandhub\ShippingSW\Model\Pickup\Pickup;
 use Kommandhub\ShippingSW\Model\Pickup\PickupRequest;
 use Kommandhub\ShippingSW\Model\Rate\RateQuoteCollection;
@@ -36,6 +37,7 @@ final class BobGoAdapter implements ShippingProviderInterface
         Capability::GENERATE_LABEL,
         Capability::TRACK,
         Capability::VERIFY_WEBHOOK,
+        Capability::LIST_CARRIERS,
     ];
 
     public function __construct(
@@ -59,6 +61,13 @@ final class BobGoAdapter implements ShippingProviderInterface
         $response = $this->transport->request('POST', '/rates', $this->mapper->ratesRequestPayload($request), $context);
 
         return $this->mapper->toRateQuotes($response, $request->currency);
+    }
+
+    public function listCarriers(ProviderContext $context): CarrierCollection
+    {
+        $response = $this->transport->request('GET', '/providers', [], $context);
+
+        return $this->mapper->toCarriers($response);
     }
 
     public function createShipment(ShipmentRequest $request, ProviderContext $context): Shipment

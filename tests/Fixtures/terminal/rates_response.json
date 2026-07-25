@@ -5,6 +5,7 @@
         {
             "rate_id": "rate_gig_std",
             "carrier_name": "GIG Logistics",
+            "carrier_slug": "gig",
             "service_name": "Standard",
             "amount": "2500.00",
             "currency": "NGN",
@@ -14,6 +15,7 @@
         {
             "rate_id": "rate_dhl_exp",
             "carrier_name": "DHL",
+            "carrier_slug": "dhl",
             "service_name": "Express",
             "amount": "7800.50",
             "currency": "NGN",

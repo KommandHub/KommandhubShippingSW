@@ -88,6 +88,35 @@ final class RateAggregatorTest extends TestCase
         self::assertNotSame('fallback', $quotes->all()[0]->providerKey);
     }
 
+    public function testAllowListFiltersCarriersBeforeCheckout(): void
+    {
+        $cache = new ArrayRateCache();
+        // MockProvider returns carriers mock_express + mock_standard; approve only standard.
+        $aggregator = $this->aggregator(
+            new MockProvider('terminal_africa'),
+            ['activeProvider' => 'terminal_africa', 'allowedCarriers' => ['mock_standard']],
+            $cache,
+        );
+
+        $quotes = $aggregator->quote($this->request(), 'sc-1');
+
+        self::assertCount(1, $quotes);
+        self::assertSame('mock_standard', $quotes->all()[0]->carrierCode);
+    }
+
+    public function testAllowListExcludingEverythingFallsBack(): void
+    {
+        $aggregator = $this->aggregator(
+            new MockProvider('terminal_africa'),
+            ['activeProvider' => 'terminal_africa', 'allowedCarriers' => ['carrier_that_does_not_quote'], 'flatRateFallback' => 999.0],
+            new ArrayRateCache(),
+        );
+
+        $quotes = $aggregator->quote($this->request(), 'sc-1');
+
+        self::assertSame('fallback', $quotes->all()[0]->providerKey);
+    }
+
     public function testNoActiveProviderReturnsFlatRate(): void
     {
         $cache = new ArrayRateCache();

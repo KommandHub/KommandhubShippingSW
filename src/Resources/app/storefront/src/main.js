@@ -1,10 +1,9 @@
 const PluginManager = window.PluginManager;
 
-// Register storefront plugins against a data attribute, lazily imported so the
-// bundle only loads on pages that actually use it.
-//
-// PluginManager.register(
-//     'ShippingExample',
-//     () => import('./example-plugin/example.plugin'),
-//     '[data-shipping-example]'
-// );
+// Carrier picker: rendered under our gate shipping method on the checkout
+// confirm page. Lists allow-listed carriers and posts the shopper's choice.
+PluginManager.register(
+    'KommandhubCarrierSelector',
+    () => import('./carrier-selector/carrier-selector.plugin'),
+    '[data-kommandhub-carrier-selector]',
+);

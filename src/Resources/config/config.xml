@@ -23,6 +23,16 @@
             </options>
         </input-field>
 
+        <!--
+          Advanced custom field: a Vue component that queries the selected
+          provider's carrier catalogue (admin API) and lets the owner pick which
+          carriers are allowed at checkout. Stored as an array of carrier codes
+          under the config key "allowedCarriers".
+        -->
+        <component name="kommandhub-shipping-carrier-select">
+            <name>allowedCarriers</name>
+        </component>
+
         <input-field type="bool">
             <name>enableSandbox</name>
             <label>Enable sandbox mode</label>

@@ -52,6 +52,19 @@ final class TShipMapperTest extends TestCase
 
         $express = $quotes->sortedByPrice()->all()[1];
         self::assertSame(780050, $express->amount->minorAmount);
+
+        // carrierCode is populated for allow-list filtering.
+        self::assertSame('gig', $cheapest->carrierCode);
+        self::assertSame('dhl', $express->carrierCode);
+    }
+
+    public function testCarriersMapToCanonicalCatalogue(): void
+    {
+        $carriers = $this->mapper->toCarriers($this->fixture('carriers_response'));
+
+        self::assertCount(3, $carriers);
+        self::assertSame(['gig', 'dhl', 'ups'], $carriers->codes());
+        self::assertTrue($carriers->has('dhl'));
     }
 
     public function testShipmentResponseMapsStatusAndTracking(): void

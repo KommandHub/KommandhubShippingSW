@@ -67,6 +67,17 @@ final class NormalizationTest extends TestCase
         self::assertSame('b', $collection->cheapest()?->serviceCode);
     }
 
+    public function testFirstWithCarrierCodeFindsTheSelectedCarrier(): void
+    {
+        $collection = new RateQuoteCollection(
+            new RateQuote('p', 'a', 'A', Money::fromMinor(500, Currency::NGN), carrierCode: 'gig'),
+            new RateQuote('p', 'b', 'B', Money::fromMinor(200, Currency::NGN), carrierCode: 'dhl'),
+        );
+
+        self::assertSame('b', $collection->firstWithCarrierCode('dhl')?->serviceCode);
+        self::assertNull($collection->firstWithCarrierCode('nope'));
+    }
+
     public function testTrackingEventCollectionLatestIsMostRecent(): void
     {
         $older = new TrackingEvent('p', 'T1', TrackingStatus::CREATED, new \DateTimeImmutable('2026-01-01T00:00:00+00:00'));

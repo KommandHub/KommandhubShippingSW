@@ -54,6 +54,18 @@ final readonly class RateQuoteCollection implements \IteratorAggregate, \Countab
         return $this->sortedByPrice()->all()[0];
     }
 
+    /** The quote for a given carrier code, if present. */
+    public function firstWithCarrierCode(string $carrierCode): ?RateQuote
+    {
+        foreach ($this->quotes as $quote) {
+            if ($quote->carrierCode === $carrierCode) {
+                return $quote;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @param callable(RateQuote): bool $predicate
      */

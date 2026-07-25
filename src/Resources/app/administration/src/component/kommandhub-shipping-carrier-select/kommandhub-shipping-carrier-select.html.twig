@@ -1,0 +1,22 @@
+{% block kommandhub_shipping_carrier_select %}
+    <div class="kommandhub-shipping-carrier-select">
+        <sw-multi-select
+            v-model:value="selected"
+            :options="options"
+            :isLoading="isLoading"
+            labelProperty="label"
+            valueProperty="value"
+            :label="$tc('kommandhub-shipping.config.allowedCarriers.label')"
+            :helpText="$tc('kommandhub-shipping.config.allowedCarriers.helpText')"
+            :placeholder="$tc('kommandhub-shipping.config.allowedCarriers.placeholder')"
+        />
+
+        <sw-alert v-if="errorMessage" variant="warning" class="sw-mt-2">
+            {{ errorMessage }}
+        </sw-alert>
+
+        <sw-alert v-else-if="!isLoading && options.length === 0" variant="info" class="sw-mt-2">
+            {{ $tc('kommandhub-shipping.config.allowedCarriers.emptyState') }}
+        </sw-alert>
+    </div>
+{% endblock %}

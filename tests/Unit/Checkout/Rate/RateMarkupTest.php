@@ -35,11 +35,12 @@ final class RateMarkupTest extends TestCase
 
     public function testPreservesServiceMetadata(): void
     {
-        $original = new RateQuote('terminal_africa', 'exp', 'Express', Money::fromMinor(700000, Currency::NGN), 1, 2, 'DHL');
+        $original = new RateQuote('terminal_africa', 'exp', 'Express', Money::fromMinor(700000, Currency::NGN), 1, 2, 'DHL', 'dhl');
         $marked = (new RateMarkup(percent: 5.0))->applyTo($original);
 
         self::assertSame('exp', $marked->serviceCode);
         self::assertSame('DHL', $marked->carrierName);
+        self::assertSame('dhl', $marked->carrierCode);
         self::assertSame(1, $marked->estimatedDaysMin);
     }
 }

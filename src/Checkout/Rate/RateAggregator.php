@@ -61,15 +61,26 @@ final class RateAggregator
             return $this->fallback($request);
         }
 
-        if ($raw->isEmpty()) {
+        // Store-owner allow-list: only approved carriers reach the customer.
+        $allowed = $this->allowList($salesChannelId)->filter($raw);
+
+        if ($allowed->isEmpty()) {
             return $this->fallback($request);
         }
 
-        $priced = $this->markup($salesChannelId)->applyToCollection($raw)->sortedByPrice();
+        $priced = $this->markup($salesChannelId)->applyToCollection($allowed)->sortedByPrice();
 
         $this->cache->set($cacheKey, $priced, $this->cacheTtl($salesChannelId));
 
         return $priced;
+    }
+
+    private function allowList(?string $salesChannelId): CarrierAllowList
+    {
+        /** @var list<string> $codes */
+        $codes = $this->config->getArray('allowedCarriers', $salesChannelId);
+
+        return new CarrierAllowList($codes);
     }
 
     private function markup(?string $salesChannelId): RateMarkup
