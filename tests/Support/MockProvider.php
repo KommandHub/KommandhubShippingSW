@@ -136,9 +136,11 @@ final class MockProvider implements ShippingProviderInterface
         );
     }
 
-    public function track(string $trackingNumber, ProviderContext $context): TrackingEventCollection
+    public function track(Shipment $shipment, ProviderContext $context): TrackingEventCollection
     {
         $this->guard(Capability::TRACK);
+
+        $trackingNumber = $shipment->trackingNumber ?? $shipment->providerShipmentId;
 
         // Intentionally returned newest-first to prove the collection sorts.
         return new TrackingEventCollection(

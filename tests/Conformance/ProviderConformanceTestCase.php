@@ -183,14 +183,22 @@ abstract class ProviderConformanceTestCase extends TestCase
     {
         $provider = $this->provider();
 
+        $shipment = new Shipment(
+            providerKey: $provider->key(),
+            providerShipmentId: 'SH-CONFORMANCE',
+            serviceCode: 'svc',
+            status: TrackingStatus::CREATED,
+            trackingNumber: 'TRK-CONFORMANCE',
+        );
+
         if (!$provider->supports(Capability::TRACK)) {
             $this->expectException(UnsupportedCapabilityException::class);
-            $provider->track('ANYTRACK', $this->context());
+            $provider->track($shipment, $this->context());
 
             return;
         }
 
-        $events = $provider->track('ANYTRACK', $this->context());
+        $events = $provider->track($shipment, $this->context());
         self::assertInstanceOf(TrackingEventCollection::class, $events);
 
         // sortedByTime() must be chronological.

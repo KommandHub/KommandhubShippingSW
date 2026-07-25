@@ -104,6 +104,15 @@ services:
     arguments:
       $pool: '@cache.object'
 
+  # Provider reference store: reuse created address/parcel ids (Terminal) across
+  # the many checkout recalculations instead of recreating them each time.
+  Kommandhub\ShippingSW\Provider\Reference\ProviderReferenceStore:
+    alias: Kommandhub\ShippingSW\Provider\Reference\PsrProviderReferenceStore
+
+  Kommandhub\ShippingSW\Provider\Reference\PsrProviderReferenceStore:
+    arguments:
+      $pool: '@cache.object'
+
   # --- Correlation-id logging ---------------------------------------------
   # Shared holder + a processor on the plugin's channel so every line carries
   # the same id for one shipment operation.

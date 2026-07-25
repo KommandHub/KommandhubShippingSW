@@ -1,8 +1,10 @@
 {
     "status": true,
+    "message": "Shipment arranged successfully",
     "data": {
-        "pickup_id": "pick_789",
-        "status": "scheduled",
-        "pickup_date": "2026-01-05T10:00:00+00:00"
+        "shipment_id": "SH-40208776515",
+        "status": "confirmed",
+        "carrier_tracking_number": "TRK-88817263",
+        "tracking_url": "https://track.terminal.africa/SH-40208776515"
     }
 }

@@ -6,6 +6,7 @@ namespace Kommandhub\ShippingSW\Tests\Unit\Provider\TerminalAfrica;
 
 use Kommandhub\ShippingSW\Provider\ProviderContext;
 use Kommandhub\ShippingSW\Provider\ShippingProviderInterface;
+use Kommandhub\ShippingSW\Provider\Reference\InMemoryProviderReferenceStore;
 use Kommandhub\ShippingSW\Provider\TerminalAfrica\TerminalAfricaAdapter;
 use Kommandhub\ShippingSW\Provider\TerminalAfrica\TShipMapper;
 use Kommandhub\ShippingSW\Tests\Conformance\ProviderConformanceTestCase;
@@ -20,7 +21,7 @@ final class TerminalAfricaAdapterConformanceTest extends ProviderConformanceTest
 {
     protected function provider(): ShippingProviderInterface
     {
-        return new TerminalAfricaAdapter(new StubTerminalTransport(), new TShipMapper());
+        return new TerminalAfricaAdapter(new StubTerminalTransport(), new TShipMapper(), new InMemoryProviderReferenceStore());
     }
 
     protected function context(): ProviderContext

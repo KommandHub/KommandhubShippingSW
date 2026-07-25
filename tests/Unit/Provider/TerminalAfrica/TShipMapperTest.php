@@ -67,14 +67,21 @@ final class TShipMapperTest extends TestCase
         self::assertTrue($carriers->has('dhl'));
     }
 
-    public function testShipmentResponseMapsStatusAndTracking(): void
+    public function testAddressAndParcelIdsAreParsed(): void
     {
-        $shipment = $this->mapper->toShipment($this->fixture('create_shipment_response'), 'rate_gig_std');
+        self::assertSame('AD-77298486083', $this->mapper->addressId($this->fixture('address_response')));
+        self::assertSame('PC-09284697565', $this->mapper->parcelId($this->fixture('parcel_response')));
+    }
 
-        self::assertSame('ship_abc123', $shipment->providerShipmentId);
+    public function testArrangedShipmentMapsStatusAndTracking(): void
+    {
+        // /shipments/pickup returns the confirmed shipment.
+        $shipment = $this->mapper->toShipment($this->fixture('pickup_response'), 'rate_gig_std');
+
+        self::assertSame('SH-40208776515', $shipment->providerShipmentId);
         self::assertSame('terminal_africa', $shipment->providerKey);
         self::assertSame(TrackingStatus::CREATED, $shipment->status); // "confirmed" -> CREATED
-        self::assertSame('TA-TRK-001', $shipment->trackingNumber);
+        self::assertSame('TRK-88817263', $shipment->trackingNumber);
         self::assertSame('rate_gig_std', $shipment->serviceCode);
     }
 
@@ -84,14 +91,6 @@ final class TShipMapperTest extends TestCase
 
         self::assertStringEndsWith('.pdf', (string) $label->url);
         self::assertSame('pdf', $label->format->value);
-    }
-
-    public function testPickupResponseMaps(): void
-    {
-        $pickup = $this->mapper->toPickup($this->fixture('pickup_response'));
-
-        self::assertSame('pick_789', $pickup->providerPickupId);
-        self::assertSame('scheduled', $pickup->status);
     }
 
     public function testTrackingEventsAreCanonicalAndSortable(): void

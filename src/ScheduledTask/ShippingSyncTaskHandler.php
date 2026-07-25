@@ -6,6 +6,8 @@ namespace Kommandhub\ShippingSW\ScheduledTask;
 
 use Kommandhub\ShippingSW\Checkout\Tracking\TrackingPipeline;
 use Kommandhub\ShippingSW\DataAbstractionLayer\ShipmentGateway;
+use Kommandhub\ShippingSW\Model\Shipment\Shipment;
+use Kommandhub\ShippingSW\Model\Tracking\TrackingStatus;
 use Kommandhub\ShippingSW\Provider\Exception\ProviderException;
 use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
 use Kommandhub\ShippingSW\Provider\ProviderRegistry;
@@ -43,8 +45,9 @@ class ShippingSyncTaskHandler extends ScheduledTaskHandler
         $open = $this->shipmentGateway->findOpen($context);
 
         foreach ($open as $shipment) {
-            $trackingNumber = $shipment->getTrackingNumber();
-            if (null === $trackingNumber || '' === $trackingNumber || !$this->registry->has($shipment->getProviderKey())) {
+            // Track by the provider's shipment id (always present); the tracking
+            // number may not exist yet and is provider-specific anyway.
+            if ('' === $shipment->getProviderShipmentId() || !$this->registry->has($shipment->getProviderKey())) {
                 continue;
             }
 
@@ -52,7 +55,16 @@ class ShippingSyncTaskHandler extends ScheduledTaskHandler
                 $provider = $this->registry->get($shipment->getProviderKey());
                 $providerContext = $this->contextFactory->forSalesChannel($shipment->getSalesChannelId());
 
-                foreach ($provider->track($trackingNumber, $providerContext) as $event) {
+                $canonical = new Shipment(
+                    providerKey: $shipment->getProviderKey(),
+                    providerShipmentId: $shipment->getProviderShipmentId(),
+                    serviceCode: $shipment->getServiceCode() ?? '',
+                    status: TrackingStatus::tryFrom($shipment->getStatus()) ?? TrackingStatus::UNKNOWN,
+                    trackingNumber: $shipment->getTrackingNumber(),
+                    trackingUrl: $shipment->getTrackingUrl(),
+                );
+
+                foreach ($provider->track($canonical, $providerContext) as $event) {
                     $this->pipeline->ingest($event, $context);
                 }
             } catch (ProviderException $e) {

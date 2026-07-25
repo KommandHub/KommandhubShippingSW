@@ -63,7 +63,7 @@ final class FailingProvider implements ShippingProviderInterface
         throw new ProviderException('unused');
     }
 
-    public function track(string $trackingNumber, ProviderContext $context): TrackingEventCollection
+    public function track(Shipment $shipment, ProviderContext $context): TrackingEventCollection
     {
         throw new ProviderException('unused');
     }

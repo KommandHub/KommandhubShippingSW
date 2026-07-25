@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kommandhub\ShippingSW\Tests\Unit\Provider\TerminalAfrica;
 
 use Kommandhub\ShippingSW\Provider\ProviderContext;
+use Kommandhub\ShippingSW\Provider\Reference\InMemoryProviderReferenceStore;
 use Kommandhub\ShippingSW\Provider\TerminalAfrica\TerminalAfricaAdapter;
 use Kommandhub\ShippingSW\Provider\TerminalAfrica\TShipMapper;
 use Kommandhub\ShippingSW\Tests\Support\StubTerminalTransport;
@@ -14,7 +15,7 @@ final class TerminalAfricaWebhookTest extends TestCase
 {
     private function adapter(): TerminalAfricaAdapter
     {
-        return new TerminalAfricaAdapter(new StubTerminalTransport(), new TShipMapper());
+        return new TerminalAfricaAdapter(new StubTerminalTransport(), new TShipMapper(), new InMemoryProviderReferenceStore());
     }
 
     private function body(): string

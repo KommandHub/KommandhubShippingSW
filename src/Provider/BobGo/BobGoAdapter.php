@@ -91,8 +91,10 @@ final class BobGoAdapter implements ShippingProviderInterface
         throw UnsupportedCapabilityException::for($this->key(), Capability::SCHEDULE_PICKUP);
     }
 
-    public function track(string $trackingNumber, ProviderContext $context): TrackingEventCollection
+    public function track(Shipment $shipment, ProviderContext $context): TrackingEventCollection
     {
+        // Bob Go tracks by its tracking_reference (the shipment's tracking number).
+        $trackingNumber = $shipment->trackingNumber ?? $shipment->providerShipmentId;
         $response = $this->transport->request('GET', '/tracking/' . rawurlencode($trackingNumber), [], $context);
 
         return $this->mapper->toTrackingEvents($response, $trackingNumber);

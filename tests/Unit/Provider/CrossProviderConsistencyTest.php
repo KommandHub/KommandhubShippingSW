@@ -20,6 +20,7 @@ use Kommandhub\ShippingSW\Model\ValueObject\Weight;
 use Kommandhub\ShippingSW\Provider\BobGo\BobGoAdapter;
 use Kommandhub\ShippingSW\Provider\BobGo\BobGoMapper;
 use Kommandhub\ShippingSW\Provider\ProviderContext;
+use Kommandhub\ShippingSW\Provider\Reference\InMemoryProviderReferenceStore;
 use Kommandhub\ShippingSW\Provider\ShippingProviderInterface;
 use Kommandhub\ShippingSW\Provider\TerminalAfrica\TerminalAfricaAdapter;
 use Kommandhub\ShippingSW\Provider\TerminalAfrica\TShipMapper;
@@ -42,7 +43,7 @@ final class CrossProviderConsistencyTest extends TestCase
     {
         return [
             'terminal (NG)' => [
-                new TerminalAfricaAdapter(new StubTerminalTransport(), new TShipMapper()),
+                new TerminalAfricaAdapter(new StubTerminalTransport(), new TShipMapper(), new InMemoryProviderReferenceStore()),
                 Currency::NGN,
                 new Address('NG', 'Lagos', '1 Sample Street', postalCode: '100001'),
                 'standard',
@@ -99,7 +100,14 @@ final class CrossProviderConsistencyTest extends TestCase
         Address $address,
         string $serviceCode,
     ): void {
-        $events = $provider->track('ANY', $this->context());
+        $shipment = new Shipment(
+            providerKey: $provider->key(),
+            providerShipmentId: 'SH-1',
+            serviceCode: $serviceCode,
+            status: TrackingStatus::CREATED,
+            trackingNumber: 'TRK-1',
+        );
+        $events = $provider->track($shipment, $this->context());
 
         self::assertInstanceOf(TrackingEventCollection::class, $events);
         foreach ($events as $event) {

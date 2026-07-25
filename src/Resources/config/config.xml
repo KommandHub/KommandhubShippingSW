@@ -64,6 +64,21 @@
             <helpText>Secret used to verify inbound tracking webhooks from the provider.</helpText>
             <copyable>true</copyable>
         </input-field>
+
+        <!-- Terminal Africa only: pre-created pickup (warehouse) address + default
+             packaging ids, so we reuse them instead of creating a new address on
+             every rate request. -->
+        <input-field>
+            <name>terminalPickupAddressId</name>
+            <label>Terminal pickup address id</label>
+            <helpText>Terminal Africa warehouse address id (AD-…). Created once; reused for every rate/shipment. Leave empty to auto-create from the origin.</helpText>
+        </input-field>
+
+        <input-field>
+            <name>terminalPackagingId</name>
+            <label>Terminal default packaging id</label>
+            <helpText>Terminal Africa packaging id used when creating parcels.</helpText>
+        </input-field>
     </card>
 
     <card>

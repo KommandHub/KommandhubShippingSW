@@ -30,13 +30,23 @@ final class StubTerminalTransport implements TerminalTransport
         $this->calls[] = ['method' => $method, 'path' => $path, 'body' => $body];
 
         return match (true) {
-            str_contains($path, '/rates/') => self::fixture('rates_response'),
+            str_contains($path, '/addresses') => self::fixture('address_response'),
+            str_contains($path, '/parcels') => self::fixture('parcel_response'),
+            str_contains($path, '/rates') => self::fixture('rates_response'),
             str_contains($path, '/carriers') => self::fixture('carriers_response'),
             str_contains($path, '/shipments/pickup') => self::fixture('pickup_response'),
-            str_contains($path, '/label') => self::fixture('label_response'),
-            str_contains($path, '/track/') => self::fixture('track_response'),
-            str_contains($path, '/shipments') => self::fixture('create_shipment_response'),
+            str_contains($path, '/shipments/track/') => self::fixture('track_response'),
+            str_contains($path, '/shipments/') => self::fixture('label_response'),
             default => throw new \RuntimeException('No stub fixture for path: ' . $path),
         };
+    }
+
+    /** @return list<string> paths POSTed, for dedup assertions */
+    public function postedPaths(): array
+    {
+        return array_values(array_map(
+            static fn (array $c): string => $c['path'],
+            array_filter($this->calls, static fn (array $c): bool => 'POST' === $c['method']),
+        ));
     }
 }

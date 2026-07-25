@@ -6,15 +6,12 @@ namespace Kommandhub\ShippingSW\Provider\TerminalAfrica;
 
 use Kommandhub\ShippingSW\Model\Carrier\Carrier;
 use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
-use Kommandhub\ShippingSW\Model\Pickup\Pickup;
-use Kommandhub\ShippingSW\Model\Pickup\PickupRequest;
 use Kommandhub\ShippingSW\Model\Rate\RateQuote;
 use Kommandhub\ShippingSW\Model\Rate\RateQuoteCollection;
 use Kommandhub\ShippingSW\Model\Rate\RateRequest;
 use Kommandhub\ShippingSW\Model\Shipment\Label;
 use Kommandhub\ShippingSW\Model\Shipment\LabelFormat;
 use Kommandhub\ShippingSW\Model\Shipment\Shipment;
-use Kommandhub\ShippingSW\Model\Shipment\ShipmentRequest;
 use Kommandhub\ShippingSW\Model\Tracking\TrackingEvent;
 use Kommandhub\ShippingSW\Model\Tracking\TrackingEventCollection;
 use Kommandhub\ShippingSW\Model\Tracking\TrackingStatus;
@@ -24,37 +21,105 @@ use Kommandhub\ShippingSW\Model\ValueObject\Money;
 use Kommandhub\ShippingSW\Provider\Exception\ProviderException;
 
 /**
- * The ONLY place TShip's payload shape is known. Every field name, unit choice,
- * and status vocabulary of Terminal Africa is confined here, so the adapter and
- * the whole core speak canonical model. If Terminal changes a field, this file
- * changes and nothing else does.
+ * The ONLY place TShip's payload shape is known. Terminal Africa is ID-based:
+ * addresses (AD-…) and parcels (PC-…) are created first and referenced by id in
+ * the rates call (RT-…), which is arranged into a shipment (SH-…). This mapper
+ * builds each request body and parses each response id; the adapter owns the
+ * ordering, id reuse, and I/O.
  *
- * NB: field names below reflect the documented TShip shape; where the live API
- * differs, correct it here (and only here). Amounts are treated as major units
- * in the quote currency and normalised to Money minor units on the way in.
+ * NB: field names reflect the documented TShip v1 shape (docs.terminal.africa).
+ * Where the live API differs, correct it here and only here.
  */
 final class TShipMapper
 {
     public const PROVIDER_KEY = 'terminal_africa';
 
-    // --- Rates ---------------------------------------------------------------
+    // --- Address (POST /addresses -> AD-…) -----------------------------------
 
     /**
+     * create-address requires city, country (ISO-2), state.
+     *
      * @return array<string, mixed>
      */
-    public function ratesRequestPayload(RateRequest $request): array
+    public function addressCreatePayload(Address $address): array
+    {
+        return array_filter([
+            'city' => $address->city,
+            'country' => $address->countryCode,
+            'state' => $address->state ?? $address->city,
+            'line1' => $address->line1,
+            'line2' => $address->line2,
+            'zip' => $address->postalCode,
+            'name' => $address->name,
+            'phone' => $address->phone,
+            'email' => $address->email,
+        ], static fn ($v): bool => null !== $v);
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     */
+    public function addressId(array $response): string
+    {
+        $data = $this->data($response);
+
+        return (string) ($data['address_id'] ?? throw new ProviderException('TShip address response missing address_id.'));
+    }
+
+    // --- Parcel (POST /parcels -> PC-…) --------------------------------------
+
+    /**
+     * create-parcel requires items, packaging, weight_unit. We send one
+     * synthetic item carrying the cart's weight/declared value; packaging is the
+     * merchant's default packaging id (from provider config) when set.
+     *
+     * @return array<string, mixed>
+     */
+    public function parcelCreatePayload(RateRequest $request, ?string $packagingId): array
+    {
+        $payload = [
+            'weight_unit' => 'kg',
+            'currency' => $request->currency->value,
+            'items' => [[
+                'name' => 'Order items',
+                'description' => 'Order items',
+                'quantity' => 1,
+                'value' => $request->declaredValue?->major() ?? '0',
+                'weight' => $request->weight->kilograms(),
+            ]],
+        ];
+
+        if (null !== $packagingId && '' !== $packagingId) {
+            $payload['packaging'] = $packagingId;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     */
+    public function parcelId(array $response): string
+    {
+        $data = $this->data($response);
+
+        return (string) ($data['parcel_id'] ?? throw new ProviderException('TShip parcel response missing parcel_id.'));
+    }
+
+    // --- Rates (POST /rates/multi/shipment) ----------------------------------
+
+    /**
+     * @param list<string> $parcelIds
+     *
+     * @return array<string, mixed>
+     */
+    public function ratesForShipmentPayload(string $pickupAddressId, string $deliveryAddressId, array $parcelIds, Currency $currency): array
     {
         return [
-            'pickup_address' => $this->address($request->origin),
-            'delivery_address' => $this->address($request->destination),
-            'parcel' => [
-                'weight' => $request->weight->kilograms(),
-                'length' => $request->dimensions->lengthMm / 10,
-                'width' => $request->dimensions->widthMm / 10,
-                'height' => $request->dimensions->heightMm / 10,
-                'value' => $request->declaredValue?->major(),
-            ],
-            'currency' => $request->currency->value,
+            'pickup_address' => $pickupAddressId,
+            'delivery_address' => $deliveryAddressId,
+            'parcels' => $parcelIds,
+            'currency' => $currency->value,
         ];
     }
 
@@ -82,7 +147,7 @@ final class TShipMapper
         return new RateQuoteCollection(...$quotes);
     }
 
-    // --- Carriers ------------------------------------------------------------
+    // --- Carriers (GET /carriers) --------------------------------------------
 
     /**
      * @param array<string, mixed> $response
@@ -107,29 +172,23 @@ final class TShipMapper
         return new CarrierCollection(...$carriers);
     }
 
-    // --- Shipment ------------------------------------------------------------
+    // --- Arrange / create shipment (POST /shipments/pickup -> SH-…) -----------
 
     /**
+     * Arrange pickup+delivery for a chosen rate. rate_id carries the shipment
+     * context server-side, so the addresses/parcel created for rating are reused
+     * — no re-creation at booking.
+     *
      * @return array<string, mixed>
      */
-    public function shipmentRequestPayload(ShipmentRequest $request): array
+    public function arrangePayload(string $rateId, string $reference, string $idempotencyKey): array
     {
         return [
-            'rate_id' => $request->serviceCode,
-            'reference' => $request->reference,
-            // Terminal has no idempotency header; we send our key as metadata so
-            // duplicates are at least detectable server-side. Real dedup is the
-            // gateway's unique idempotency_key.
-            'metadata' => ['idempotency_key' => $request->idempotencyKey],
-            'pickup_address' => $this->address($request->origin),
-            'delivery_address' => $this->address($request->destination),
-            'parcel' => [
-                'weight' => $request->weight->kilograms(),
-                'length' => $request->dimensions->lengthMm / 10,
-                'width' => $request->dimensions->widthMm / 10,
-                'height' => $request->dimensions->heightMm / 10,
-                'value' => $request->declaredValue?->major(),
-            ],
+            'rate_id' => $rateId,
+            'reference' => $reference,
+            // TShip has no idempotency header; carry our key as metadata so a
+            // duplicate is detectable. Real dedup is the gateway's unique key.
+            'metadata' => ['idempotency_key' => $idempotencyKey],
         ];
     }
 
@@ -145,13 +204,13 @@ final class TShipMapper
             providerShipmentId: (string) ($data['shipment_id'] ?? $data['id'] ?? throw new ProviderException('TShip shipment response missing shipment_id.')),
             serviceCode: $serviceCode,
             status: $this->mapStatus((string) ($data['status'] ?? 'pending')),
-            trackingNumber: isset($data['tracking_number']) ? (string) $data['tracking_number'] : null,
+            trackingNumber: isset($data['carrier_tracking_number']) ? (string) $data['carrier_tracking_number'] : null,
             trackingUrl: isset($data['tracking_url']) ? (string) $data['tracking_url'] : null,
             createdAt: new \DateTimeImmutable(),
         );
     }
 
-    // --- Label ---------------------------------------------------------------
+    // --- Label (GET /shipments/{shipment_id}) --------------------------------
 
     /**
      * @param array<string, mixed> $response
@@ -168,41 +227,12 @@ final class TShipMapper
         return new Label(LabelFormat::PDF, url: (string) $url);
     }
 
-    // --- Pickup --------------------------------------------------------------
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function pickupRequestPayload(PickupRequest $request): array
-    {
-        return [
-            'shipment_ids' => $request->providerShipmentIds,
-            'pickup_date' => $request->readyAt->format(\DateTimeInterface::ATOM),
-            'pickup_address' => $this->address($request->location),
-        ];
-    }
+    // --- Tracking (GET /shipments/track/{shipment_id}) -----------------------
 
     /**
      * @param array<string, mixed> $response
      */
-    public function toPickup(array $response): Pickup
-    {
-        $data = $this->data($response);
-
-        return new Pickup(
-            providerKey: self::PROVIDER_KEY,
-            providerPickupId: (string) ($data['pickup_id'] ?? $data['id'] ?? throw new ProviderException('TShip pickup response missing pickup_id.')),
-            scheduledAt: new \DateTimeImmutable((string) ($data['pickup_date'] ?? 'now')),
-            status: (string) ($data['status'] ?? 'scheduled'),
-        );
-    }
-
-    // --- Tracking ------------------------------------------------------------
-
-    /**
-     * @param array<string, mixed> $response
-     */
-    public function toTrackingEvents(array $response, string $trackingNumber): TrackingEventCollection
+    public function toTrackingEvents(array $response, string $stampTrackingNumber): TrackingEventCollection
     {
         $data = $this->data($response);
         /** @var list<array<string, mixed>> $events */
@@ -210,7 +240,7 @@ final class TShipMapper
 
         $mapped = [];
         foreach ($events as $event) {
-            $mapped[] = $this->toTrackingEvent($event, $trackingNumber);
+            $mapped[] = $this->toTrackingEvent($event, $stampTrackingNumber);
         }
 
         return new TrackingEventCollection(...$mapped);
@@ -221,11 +251,11 @@ final class TShipMapper
      *
      * @param array<string, mixed> $event
      */
-    public function toTrackingEvent(array $event, string $trackingNumber): TrackingEvent
+    public function toTrackingEvent(array $event, string $stampTrackingNumber): TrackingEvent
     {
         return new TrackingEvent(
             providerKey: self::PROVIDER_KEY,
-            trackingNumber: $trackingNumber,
+            trackingNumber: $stampTrackingNumber,
             status: $this->mapStatus((string) ($event['status'] ?? 'unknown')),
             occurredAt: new \DateTimeImmutable((string) ($event['datetime'] ?? $event['date'] ?? 'now')),
             description: isset($event['description']) ? (string) $event['description'] : null,
@@ -233,15 +263,10 @@ final class TShipMapper
         );
     }
 
-    /**
-     * Translate a TShip status token to the canonical lifecycle. Unknown tokens
-     * map to UNKNOWN rather than throwing — a new provider status must never
-     * break the delivery pipeline.
-     */
     public function mapStatus(string $tshipStatus): TrackingStatus
     {
         return match (strtolower(str_replace([' ', '_'], '-', $tshipStatus))) {
-            'pending', 'awaiting-confirmation' => TrackingStatus::PENDING,
+            'draft', 'pending', 'awaiting-confirmation' => TrackingStatus::PENDING,
             'confirmed', 'created', 'booked' => TrackingStatus::CREATED,
             'picked-up', 'in-transit', 'transit' => TrackingStatus::IN_TRANSIT,
             'out-for-delivery' => TrackingStatus::OUT_FOR_DELIVERY,
@@ -253,25 +278,33 @@ final class TShipMapper
         };
     }
 
-    // --- helpers -------------------------------------------------------------
-
     /**
-     * @return array<string, mixed>
+     * Stable content hash for id reuse (address / parcel dedup).
      */
-    private function address(Address $address): array
+    public function addressHash(Address $address): string
     {
-        return array_filter([
-            'country' => $address->countryCode,
-            'city' => $address->city,
-            'line1' => $address->line1,
-            'line2' => $address->line2,
-            'state' => $address->state,
-            'zip' => $address->postalCode,
-            'name' => $address->name,
-            'phone' => $address->phone,
-            'email' => $address->email,
-        ], static fn ($v): bool => null !== $v);
+        return hash('sha256', implode('|', [
+            strtoupper($address->countryCode),
+            strtoupper($address->city),
+            strtoupper((string) $address->postalCode),
+            strtoupper($address->line1),
+            strtoupper((string) $address->state),
+        ]));
     }
+
+    public function parcelHash(RateRequest $request, ?string $packagingId): string
+    {
+        return hash('sha256', implode('|', [
+            $request->weight->grams,
+            $request->dimensions->lengthMm,
+            $request->dimensions->widthMm,
+            $request->dimensions->heightMm,
+            $request->currency->value,
+            (string) $packagingId,
+        ]));
+    }
+
+    // --- helpers -------------------------------------------------------------
 
     /**
      * @param array<string, mixed> $rate
@@ -305,8 +338,7 @@ final class TShipMapper
     }
 
     /**
-     * Rates come back either as data:[...] or data:{rates:[...]} across TShip
-     * endpoints; accept both.
+     * Rates come back as data:[...] or data:{rates:[...]} across TShip endpoints.
      *
      * @param array<string, mixed> $response
      *

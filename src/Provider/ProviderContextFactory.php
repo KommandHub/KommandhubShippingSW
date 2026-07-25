@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kommandhub\ShippingSW\Provider;
 
+use Kommandhub\ShippingSW\Provider\TerminalAfrica\TerminalAfricaAdapter;
 use Kommandhub\ShippingSW\Setting\Service\Config;
 
 /**
@@ -41,6 +42,30 @@ final class ProviderContextFactory
             sandbox: $sandbox,
             webhookSecret: '' === $webhookSecret ? null : $webhookSecret,
             salesChannelId: $salesChannelId,
+            extra: $this->providerExtra($salesChannelId),
         );
+    }
+
+    /**
+     * Provider-specific settings carried on ProviderContext::$extra. Kept here so
+     * config keys live in one place; adapters read their own keys by constant.
+     *
+     * @return array<string, scalar|null>
+     */
+    private function providerExtra(?string $salesChannelId): array
+    {
+        $extra = [];
+
+        $pickupAddressId = $this->config->getString(TerminalAfricaAdapter::EXTRA_PICKUP_ADDRESS_ID, $salesChannelId);
+        if ('' !== $pickupAddressId) {
+            $extra[TerminalAfricaAdapter::EXTRA_PICKUP_ADDRESS_ID] = $pickupAddressId;
+        }
+
+        $packagingId = $this->config->getString(TerminalAfricaAdapter::EXTRA_PACKAGING_ID, $salesChannelId);
+        if ('' !== $packagingId) {
+            $extra[TerminalAfricaAdapter::EXTRA_PACKAGING_ID] = $packagingId;
+        }
+
+        return $extra;
     }
 }

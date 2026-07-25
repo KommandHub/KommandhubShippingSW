@@ -76,10 +76,16 @@ interface ShippingProviderInterface
     public function schedulePickup(PickupRequest $request, ProviderContext $context): Pickup;
 
     /**
+     * Pull tracking history for a booked shipment. Takes the canonical Shipment
+     * (not a bare string) because providers track by different handles — Terminal
+     * by its shipment_id, Bob Go by its tracking_reference — and each adapter
+     * reads the field it needs. Events are stamped with the shipment's tracking
+     * number so the pipeline can link them back.
+     *
      * @throws UnsupportedCapabilityException
      * @throws ProviderException
      */
-    public function track(string $trackingNumber, ProviderContext $context): TrackingEventCollection;
+    public function track(Shipment $shipment, ProviderContext $context): TrackingEventCollection;
 
     /**
      * Verify a webhook's authenticity from its raw (unparsed) body and the
