@@ -94,6 +94,7 @@ final class BobGoMapper
                 code: (string) $code,
                 name: (string) ($provider['name'] ?? $code),
                 logoUrl: isset($provider['logo_url']) ? (string) $provider['logo_url'] : null,
+                providerData: $provider, // full raw Bob Go provider object
             );
         }
 

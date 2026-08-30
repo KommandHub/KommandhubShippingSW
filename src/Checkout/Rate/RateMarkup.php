@@ -40,6 +40,8 @@ final readonly class RateMarkup
             estimatedDaysMax: $quote->estimatedDaysMax,
             carrierName: $quote->carrierName,
             carrierCode: $quote->carrierCode,
+            description: $quote->description,
+            logoUrl: $quote->logoUrl,
         );
     }
 }

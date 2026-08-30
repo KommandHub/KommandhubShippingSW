@@ -8,7 +8,7 @@ use Kommandhub\ShippingSW\Model\Shipment\ShipmentRequest;
 use Kommandhub\ShippingSW\Model\ValueObject\Address;
 use Kommandhub\ShippingSW\Model\ValueObject\Dimensions;
 use Kommandhub\ShippingSW\Model\ValueObject\Weight;
-use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
+use Kommandhub\ShippingSW\Provider\ProviderContextResolver;
 use Shopware\Core\Checkout\Order\Aggregate\OrderDelivery\OrderDeliveryEntity;
 use Shopware\Core\Checkout\Order\OrderEntity;
 use Shopware\Core\Framework\Context;
@@ -27,7 +27,7 @@ final class OrderShipmentRequestFactory
 {
     public function __construct(
         private readonly EntityRepository $orderRepository,
-        private readonly ProviderContextFactory $contextFactory,
+        private readonly ProviderContextResolver $contextFactory,
     ) {
     }
 
@@ -35,7 +35,8 @@ final class OrderShipmentRequestFactory
     {
         $criteria = (new Criteria([$orderId]))
             ->addAssociation('lineItems')
-            ->addAssociation('deliveries.shippingOrderAddress.country');
+            ->addAssociation('deliveries.shippingOrderAddress.country')
+            ->addAssociation('deliveries.shippingOrderAddress.countryState');
 
         /** @var OrderEntity|null $order */
         $order = $this->orderRepository->search($criteria, $context)->first();
@@ -58,6 +59,7 @@ final class OrderShipmentRequestFactory
             countryCode: (string) $address->getCountry()->getIso(),
             city: (string) $address->getCity(),
             line1: (string) $address->getStreet(),
+            state: $address->getCountryState()?->getName(),
             postalCode: $address->getZipcode(),
             name: trim($address->getFirstName() . ' ' . $address->getLastName()),
             phone: $address->getPhoneNumber(),

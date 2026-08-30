@@ -3,25 +3,21 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/6.7/src/Core/System/SystemConfig/Schema/config.xsd">
 
     <!--
-      Every field here is sales-channel scoped natively: the admin's sales-channel
-      switch on this page lets a NG channel select Terminal Africa and a SA channel
-      select Bob Go, each with its own credentials, with no custom UI code. This is
-      the "per-sales-channel provider config" — SystemConfig, not a custom entity.
+      Core config is provider-agnostic. Each provider (Bob Go here, Terminal in
+      its own plugin) owns its own credentials in its own configurator. The
+      active-provider selector lists whatever providers are installed, so core
+      never names a provider.
     -->
     <card>
         <title>Shipping provider</title>
         <title lang="de-DE">Versanddienstleister</title>
 
-        <input-field type="single-select">
+        <!-- Dynamic single-select populated from the installed provider registry
+             (admin API), so adding/removing a provider plugin changes the options
+             with no core edit. Stored under "activeProvider". -->
+        <component name="kommandhub-shipping-provider-select">
             <name>activeProvider</name>
-            <label>Active provider</label>
-            <label lang="de-DE">Aktiver Dienstleister</label>
-            <helpText>The courier integration this sales channel uses.</helpText>
-            <options>
-                <option><id>terminal_africa</id><name>Terminal Africa (Nigeria)</name></option>
-                <option><id>bobgo</id><name>Bob Go (South Africa)</name></option>
-            </options>
-        </input-field>
+        </component>
 
         <!--
           Advanced custom field: a Vue component that queries the selected
@@ -32,52 +28,36 @@
         <component name="kommandhub-shipping-carrier-select">
             <name>allowedCarriers</name>
         </component>
+    </card>
+
+    <card>
+        <title>Bob Go credentials</title>
+        <title lang="de-DE">Bob Go-Zugangsdaten</title>
 
         <input-field type="bool">
-            <name>enableSandbox</name>
-            <label>Enable sandbox mode</label>
-            <label lang="de-DE">Sandbox-Modus aktivieren</label>
+            <name>bobgoEnableSandbox</name>
+            <label>Enable Bob Go sandbox</label>
             <defaultValue>true</defaultValue>
-            <helpText>Use the provider's test environment. Disable before going live.</helpText>
+            <helpText>Use Bob Go's test environment. Disable before going live.</helpText>
         </input-field>
 
         <input-field type="password">
-            <name>apiKey</name>
-            <label>Live API key</label>
-            <label lang="de-DE">Live-API-Schlüssel</label>
-            <helpText>The active provider's live API key. Never share it publicly.</helpText>
+            <name>bobgoApiKey</name>
+            <label>Bob Go live API key</label>
             <copyable>true</copyable>
         </input-field>
 
         <input-field type="password">
-            <name>apiKeySandbox</name>
-            <label>Test API key</label>
-            <label lang="de-DE">Test-API-Schlüssel</label>
-            <helpText>Used only while sandbox mode is enabled.</helpText>
+            <name>bobgoApiKeySandbox</name>
+            <label>Bob Go test API key</label>
             <copyable>true</copyable>
         </input-field>
 
         <input-field type="password">
-            <name>webhookSecret</name>
-            <label>Webhook signing secret</label>
-            <label lang="de-DE">Webhook-Signatur-Geheimnis</label>
-            <helpText>Secret used to verify inbound tracking webhooks from the provider.</helpText>
+            <name>bobgoWebhookSecret</name>
+            <label>Bob Go webhook signing secret</label>
+            <helpText>Verifies inbound Bob Go tracking webhooks.</helpText>
             <copyable>true</copyable>
-        </input-field>
-
-        <!-- Terminal Africa only: pre-created pickup (warehouse) address + default
-             packaging ids, so we reuse them instead of creating a new address on
-             every rate request. -->
-        <input-field>
-            <name>terminalPickupAddressId</name>
-            <label>Terminal pickup address id</label>
-            <helpText>Terminal Africa warehouse address id (AD-…). Created once; reused for every rate/shipment. Leave empty to auto-create from the origin.</helpText>
-        </input-field>
-
-        <input-field>
-            <name>terminalPackagingId</name>
-            <label>Terminal default packaging id</label>
-            <helpText>Terminal Africa packaging id used when creating parcels.</helpText>
         </input-field>
     </card>
 

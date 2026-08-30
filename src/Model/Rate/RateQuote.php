@@ -23,6 +23,8 @@ final readonly class RateQuote
         public ?string $carrierName = null,
         // Stable carrier identifier, matched against the owner's allow-list.
         public ?string $carrierCode = null,
+        public ?string $description = null,
+        public ?string $logoUrl = null,
     ) {
     }
 }

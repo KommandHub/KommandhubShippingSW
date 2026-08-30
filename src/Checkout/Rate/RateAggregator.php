@@ -9,7 +9,7 @@ use Kommandhub\ShippingSW\Model\Rate\RateQuoteCollection;
 use Kommandhub\ShippingSW\Model\Rate\RateRequest;
 use Kommandhub\ShippingSW\Model\ValueObject\Money;
 use Kommandhub\ShippingSW\Provider\Exception\ProviderException;
-use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
+use Kommandhub\ShippingSW\Provider\ProviderContextResolver;
 use Kommandhub\ShippingSW\Provider\ProviderRegistry;
 use Kommandhub\ShippingSW\Setting\Service\Config;
 use Psr\Log\LoggerInterface;
@@ -28,7 +28,7 @@ final class RateAggregator
 {
     public function __construct(
         private readonly ProviderRegistry $registry,
-        private readonly ProviderContextFactory $contextFactory,
+        private readonly ProviderContextResolver $contextFactory,
         private readonly RateCache $cache,
         private readonly Config $config,
         private readonly LoggerInterface $logger,
@@ -44,7 +44,7 @@ final class RateAggregator
             return $this->fallback($request);
         }
 
-        $context = $this->contextFactory->forSalesChannel($salesChannelId);
+        $context = $this->contextFactory->forProvider($providerKey, $salesChannelId);
         $cacheKey = RateCacheKey::for($request, $providerKey, $context->sandbox);
 
         $cached = $this->cache->get($cacheKey);

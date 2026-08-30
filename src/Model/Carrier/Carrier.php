@@ -12,10 +12,18 @@ namespace Kommandhub\ShippingSW\Model\Carrier;
  */
 final readonly class Carrier
 {
+    /**
+     * @param array<string, mixed> $providerData the raw provider payload for this
+     *                                            carrier, opaque to the core —
+     *                                            interpreted only via a provider's
+     *                                            CarrierData struct, never read
+     *                                            key-by-key in business logic
+     */
     public function __construct(
         public string $code,
         public string $name,
         public ?string $logoUrl = null,
+        public array $providerData = [],
     ) {
     }
 }

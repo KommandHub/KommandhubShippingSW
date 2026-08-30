@@ -11,10 +11,29 @@ export default class CarrierApiService extends ApiService {
         this.name = 'carrierApiService';
     }
 
+    /** Read the prefetched catalogue from the DB (fast, no provider call). */
     getCarriers(provider, salesChannelId) {
         return this.httpClient
             .get('/_action/kommandhub-shipping/carriers', {
                 params: { provider, salesChannelId },
+                headers: this.getBasicHeaders(),
+            })
+            .then((response) => ApiService.handleResponse(response));
+    }
+
+    /** List installed shipping providers, for the active-provider selector. */
+    getProviders() {
+        return this.httpClient
+            .get('/_action/kommandhub-shipping/providers', {
+                headers: this.getBasicHeaders(),
+            })
+            .then((response) => ApiService.handleResponse(response));
+    }
+
+    /** Re-sync one provider's carriers from its API into the DB, then return them. */
+    refresh(provider) {
+        return this.httpClient
+            .post('/_action/kommandhub-shipping/carriers/refresh', { provider }, {
                 headers: this.getBasicHeaders(),
             })
             .then((response) => ApiService.handleResponse(response));

@@ -1,0 +1,12 @@
+{% block kommandhub_shipping_provider_select %}
+    <sw-single-select
+        v-model:value="selected"
+        :options="options"
+        :isLoading="isLoading"
+        labelProperty="label"
+        valueProperty="value"
+        :label="$tc('kommandhub-shipping.config.activeProvider.label')"
+        :helpText="$tc('kommandhub-shipping.config.activeProvider.helpText')"
+        :placeholder="$tc('kommandhub-shipping.config.activeProvider.placeholder')"
+    />
+{% endblock %}

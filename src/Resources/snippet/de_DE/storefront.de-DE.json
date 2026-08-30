@@ -1,4 +1,9 @@
 {
+  "kommandhub": {
+    "shipping": {
+      "viewShippingRates": "Versandtarife anzeigen"
+    }
+  },
   "kommandhub-shipping": {
     "title": "KommandhubShipping for Shopware 6"
   },

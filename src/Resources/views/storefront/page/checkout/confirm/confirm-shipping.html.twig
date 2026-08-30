@@ -1,18 +1,9 @@
 {% sw_extends '@Storefront/storefront/page/checkout/confirm/confirm-shipping.html.twig' %}
 
 {# Render the carrier picker only under our gate shipping method, so no other
-   method (self-pickup, flat rate) shows it. The storefront plugin fills the
-   container from /kommandhub/shipping/carriers. #}
-{% block page_checkout_confirm_shipping_method %}
+   method (self-pickup, flat rate) shows it. Appended after the shipping-method
+   form; the storefront plugin fills the container from
+   /kommandhub/shipping/carriers. #}
+{% block page_checkout_confirm_shipping_form %}
     {{ parent() }}
-
-    {% if context.shippingMethod.technicalName == 'kommandhub_shipping_dynamic' %}
-        <div class="kommandhub-carrier-selector"
-             data-kommandhub-carrier-selector
-             data-kommandhub-carrier-selector-options="{{ {
-                 listUrl: path('frontend.kommandhub.shipping.carriers'),
-                 selectUrl: path('frontend.kommandhub.shipping.select_carrier')
-             }|json_encode }}">
-        </div>
-    {% endif %}
 {% endblock %}

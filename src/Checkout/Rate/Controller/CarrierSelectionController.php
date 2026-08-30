@@ -9,8 +9,10 @@ use Kommandhub\ShippingSW\Checkout\Rate\CartRateRequestFactory;
 use Kommandhub\ShippingSW\Checkout\Rate\RateAggregator;
 use Kommandhub\ShippingSW\Model\Rate\RateQuote;
 use Shopware\Core\Checkout\Cart\SalesChannel\CartService;
+use Shopware\Core\PlatformRequest;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Storefront\Controller\StorefrontController;
+use Shopware\Storefront\Framework\Routing\StorefrontRouteScope;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -24,7 +26,8 @@ use Symfony\Component\Routing\Attribute\Route;
  * LiveRateDeliveryProcessor prices the chosen carrier. Mirrors the Terminal
  * WooCommerce flow (fetch rates → customer picks → session → recalculated cost).
  */
-#[Route(defaults: ['_routeScope' => ['storefront']])]
+
+#[Route(defaults: [PlatformRequest::ATTRIBUTE_ROUTE_SCOPE => [StorefrontRouteScope::ID]])]
 class CarrierSelectionController extends StorefrontController
 {
     public function __construct(
@@ -38,7 +41,8 @@ class CarrierSelectionController extends StorefrontController
     #[Route(
         path: '/kommandhub/shipping/carriers',
         name: 'frontend.kommandhub.shipping.carriers',
-        methods: ['GET'],
+        defaults: ['XmlHttpRequest' => 'true'],
+        methods: ['GET']
     )]
     public function list(SalesChannelContext $context): JsonResponse
     {
@@ -59,6 +63,8 @@ class CarrierSelectionController extends StorefrontController
             'currency' => $q->amount->currency->value,
             'estimatedDaysMin' => $q->estimatedDaysMin,
             'estimatedDaysMax' => $q->estimatedDaysMax,
+            'description' => $q->description,
+            'logoUrl' => $q->logoUrl,
         ], $quotes->all());
 
         return new JsonResponse(['carriers' => $carriers, 'selected' => $selected]);
@@ -67,6 +73,7 @@ class CarrierSelectionController extends StorefrontController
     #[Route(
         path: '/kommandhub/shipping/select-carrier',
         name: 'frontend.kommandhub.shipping.select_carrier',
+        defaults: ['XmlHttpRequest' => 'true'],
         methods: ['POST'],
     )]
     public function select(Request $request, SalesChannelContext $context): JsonResponse

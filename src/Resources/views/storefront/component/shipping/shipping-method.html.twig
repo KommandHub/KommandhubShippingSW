@@ -1,0 +1,20 @@
+{% sw_extends '@Storefront/storefront/component/shipping/shipping-method.html.twig' %}
+
+{% block component_shipping_method_description %}
+    {{ parent() }}
+
+    {% if shipping.technicalName == 'kommandhub_shipping_dynamic' and shipping.id is same as(selectedShippingMethodId) %}
+        <div class="kommandhub-carrier-selector"
+             data-kommandhub-carrier-selector
+             data-kommandhub-carrier-selector-options="{{ {
+                 listUrl: path('frontend.kommandhub.shipping.carriers'),
+                 selectUrl: path('frontend.kommandhub.shipping.select_carrier')
+             }|json_encode }}">
+            <a href="#"
+               class="kommandhub-carrier-trigger"
+               data-kommandhub-carrier-trigger="true">
+                {{ "kommandhub.shipping.viewShippingRates"|trans|sw_sanitize|default('View shipping rates') }}
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}

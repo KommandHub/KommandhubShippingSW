@@ -1,14 +1,10 @@
 import Plugin from 'src/plugin-system/plugin.class';
 import HttpClient from 'src/service/http-client.service';
+import PseudoModalUtil from 'src/utility/modal-extension/pseudo-modal.util';
 
 /**
  * Checkout carrier picker. Fetches the allow-listed carrier options for the
- * current cart, renders them as radio options, and on selection posts the choice
- * to the plugin's storefront endpoint, then reloads so the delivery cost
- * recalculates for the chosen carrier.
- *
- * Mounted on an element carrying [data-kommandhub-carrier-selector]; that
- * element is emitted by the Twig block only under our gate shipping method.
+ * current cart and renders them inside a Shopware modal.
  */
 export default class CarrierSelectorPlugin extends Plugin {
     static options = {
@@ -18,6 +14,18 @@ export default class CarrierSelectorPlugin extends Plugin {
 
     init() {
         this._client = new HttpClient();
+        this._registerEvents();
+    }
+
+    _registerEvents() {
+        const trigger = this.el.querySelector('[data-kommandhub-carrier-trigger]');
+        if (trigger) {
+            trigger.addEventListener('click', this._onClickTrigger.bind(this));
+        }
+    }
+
+    _onClickTrigger(event) {
+        event.preventDefault();
         this._loadCarriers();
     }
 
@@ -29,31 +37,69 @@ export default class CarrierSelectorPlugin extends Plugin {
             } catch (e) {
                 return;
             }
-            this._render(payload.carriers || [], payload.selected || null);
+            this._openModal(payload.carriers || [], payload.selected || null);
         });
     }
 
-    _render(carriers, selected) {
+    _openModal(carriers, selected) {
+        const content = this._renderModalContent(carriers, selected);
+        const modal = new PseudoModalUtil(content);
+        modal.open();
+
+        const modalElement = modal.getModal();
+        modalElement.querySelectorAll('input[name="kommandhub-carrier"]').forEach((input) => {
+            input.addEventListener('change', (event) => this._select(event.target.value));
+        });
+    }
+
+    _renderModalContent(carriers, selected) {
         if (!carriers.length) {
-            this.el.innerHTML = '';
-            return;
+            return `
+                <div class="modal-header">
+                    <h5 class="modal-title">Available Shipping Rates</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    No shipping rates available.
+                </div>
+            `;
         }
 
-        this.el.innerHTML = carriers
+        const carriersHtml = carriers
             .map((c) => {
                 const checked = c.carrierCode === selected ? 'checked' : '';
                 const days = c.estimatedDaysMin ? ` · ${c.estimatedDaysMin}-${c.estimatedDaysMax || c.estimatedDaysMin} days` : '';
+                const logo = c.logoUrl ? `<img src="${c.logoUrl}" alt="${c.carrierName}" style="height: 25px; max-width: 80px; object-fit: contain; margin-right: 12px;">` : '';
+                const descriptionHtml = c.description ? `<div class="small text-muted mt-1">${c.description}</div>` : '';
+
                 return `
-                    <label class="kommandhub-carrier-option">
-                        <input type="radio" name="kommandhub-carrier" value="${c.carrierCode}" ${checked}>
-                        <span>${c.carrierName || c.serviceName} — ${c.currency} ${c.amount}${days}</span>
-                    </label>`;
+                    <div class="kommandhub-carrier-option mb-3 p-2 border rounded">
+                        <label class="d-flex align-items-center mb-0" style="cursor: pointer;">
+                            <input type="radio" name="kommandhub-carrier" value="${c.carrierCode}" ${checked} class="me-3">
+                            <div class="d-flex align-items-center flex-grow-1">
+                                ${logo}
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold">${c.carrierName || c.serviceName}</span>
+                                        <span class="ms-2">${c.currency} ${c.amount}${days}</span>
+                                    </div>
+                                    ${descriptionHtml}
+                                </div>
+                            </div>
+                        </label>
+                    </div>`;
             })
             .join('');
 
-        this.el.querySelectorAll('input[name="kommandhub-carrier"]').forEach((input) => {
-            input.addEventListener('change', (event) => this._select(event.target.value));
-        });
+        return `
+            <div class="modal-header">
+                <h5 class="modal-title">Available Shipping Rates</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ${carriersHtml}
+            </div>
+        `;
     }
 
     _select(carrierCode) {

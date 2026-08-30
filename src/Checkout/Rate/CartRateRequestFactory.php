@@ -43,6 +43,7 @@ final class CartRateRequestFactory
             countryCode: $countryIso,
             city: (string) $shippingAddress->getCity(),
             line1: (string) $shippingAddress->getStreet(),
+            state: $shippingAddress->getCountryState()?->getTranslation('name'),
             postalCode: $shippingAddress->getZipcode(),
         );
 
@@ -52,7 +53,26 @@ final class CartRateRequestFactory
             weight: Weight::fromGrams($this->cartWeightGrams($cart)),
             dimensions: Dimensions::fromCentimeters(30, 20, 10), // TODO: real parcel packing
             currency: $currency,
+            itemNames: $this->itemNames($cart),
         );
+    }
+
+    /**
+     * Product labels in the cart, for a provider parcel description.
+     *
+     * @return list<string>
+     */
+    private function itemNames(Cart $cart): array
+    {
+        $names = [];
+        foreach ($cart->getLineItems()->getFlat() as $lineItem) {
+            $label = $lineItem->getLabel();
+            if (null !== $label && '' !== $label) {
+                $names[] = $label;
+            }
+        }
+
+        return array_values(array_unique($names));
     }
 
     private function cartWeightGrams(Cart $cart): int

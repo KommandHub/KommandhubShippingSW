@@ -2,11 +2,17 @@
   "kommandhub-shipping": {
     "title": "KommandhubShipping for Shopware 6",
     "config": {
+      "activeProvider": {
+        "label": "Active provider",
+        "helpText": "The courier integration this sales channel uses. Options come from the installed provider plugins.",
+        "placeholder": "Select a provider…"
+      },
       "allowedCarriers": {
         "label": "Allowed carriers",
         "helpText": "Only these carriers from the selected provider are offered to customers at checkout. Leave empty to allow all.",
         "placeholder": "Select carriers…",
-        "emptyState": "No carriers loaded. Choose and save a provider first, then reopen this page."
+        "refresh": "Refresh carriers from provider",
+        "emptyState": "No carriers stored yet. Save a provider with valid credentials, then click “Refresh carriers from provider”."
       }
     }
   },

@@ -20,6 +20,12 @@ services:
   _instanceof:
     Kommandhub\ShippingSW\Provider\ShippingProviderInterface:
       tags: ['kommandhub_shipping.provider']
+    Kommandhub\ShippingSW\Provider\Carrier\CarrierDataHydrator:
+      tags: ['kommandhub_shipping.carrier_data_hydrator']
+    # Each provider (core module or external plugin) contributes its context
+    # builder; core collects them and never reads a provider's config keys.
+    Kommandhub\ShippingSW\Provider\ProviderConfigurator:
+      tags: ['kommandhub_shipping.provider_configurator']
 
   Kommandhub\ShippingSW\:
     resource: '../../*'
@@ -60,18 +66,11 @@ services:
   Kommandhub\ShippingSW\Client\Http\CircuitBreakerStorage:
     alias: Kommandhub\ShippingSW\Client\Http\InMemoryCircuitBreakerStorage
 
-  # --- Terminal Africa provider (Phase 1) ----------------------------------
+  # Terminal Africa is a separate plugin (KommandhubTerminalSW) that registers
+  # its adapter/transport/configurator against the tags declared here.
+
+  # --- Bob Go provider (core module) ---------------------------------------
   # The adapter is auto-tagged via _instanceof, so ProviderRegistry finds it.
-  Kommandhub\ShippingSW\Provider\TerminalAfrica\TerminalTransport:
-    alias: Kommandhub\ShippingSW\Provider\TerminalAfrica\HttpTerminalTransport
-
-  Kommandhub\ShippingSW\Provider\TerminalAfrica\HttpTerminalTransport:
-    arguments:
-      $client: '@kommandhub_shipping.http.retryable_client'
-      $timeoutSeconds: 4
-
-  # --- Bob Go provider (Phase 2 — zero core changes) -----------------------
-  # Same wiring shape as Terminal; the adapter is auto-tagged via _instanceof.
   Kommandhub\ShippingSW\Provider\BobGo\BobGoTransport:
     alias: Kommandhub\ShippingSW\Provider\BobGo\HttpBobGoTransport
 
@@ -129,21 +128,46 @@ services:
     tags:
       - { name: 'shopware.entity.definition' }
 
+  Kommandhub\ShippingSW\Entity\Carrier\CarrierDefinition:
+    tags:
+      - { name: 'shopware.entity.definition' }
+
   Kommandhub\ShippingSW\DataAbstractionLayer\ShipmentGateway:
     arguments:
       $shipmentRepository: '@kommandhub_shipping_shipment.repository'
       $trackingEventRepository: '@kommandhub_shipping_tracking_event.repository'
 
+  # Context resolver: reads the active-provider selection, delegates context
+  # construction to each provider's tagged configurator.
+  Kommandhub\ShippingSW\Provider\ProviderContextResolver:
+    alias: Kommandhub\ShippingSW\Provider\ProviderContextRegistry
+
+  Kommandhub\ShippingSW\Provider\ProviderContextRegistry:
+    arguments:
+      $configurators: !tagged_iterator kommandhub_shipping.provider_configurator
+
+  # Per-provider typed carrier-data hydrators, collected by tag.
+  Kommandhub\ShippingSW\Provider\Carrier\CarrierDataHydratorRegistry:
+    arguments:
+      $hydrators: !tagged_iterator kommandhub_shipping.carrier_data_hydrator
+
+  # Prefetched carrier catalogue (read-model over the entity).
+  Kommandhub\ShippingSW\Provider\Catalog\CarrierCatalog:
+    alias: Kommandhub\ShippingSW\DataAbstractionLayer\DalCarrierCatalog
+
+  Kommandhub\ShippingSW\DataAbstractionLayer\DalCarrierCatalog:
+    arguments:
+      $carrierRepository: '@kommandhub_shipping_carrier.repository'
+
   Kommandhub\ShippingSW\ScheduledTask\ShippingSyncTask:
     tags:
       - { name: 'shopware.scheduled.task' }
 
-  Kommandhub\ShippingSW\Webhook\Controller\WebhookController:
-    public: true
-    calls:
-      - [setContainer, ['@service_container']]
+  Kommandhub\ShippingSW\ScheduledTask\CarrierSyncTask:
+    tags:
+      - { name: 'shopware.scheduled.task' }
 
-  Kommandhub\ShippingSW\Webhook\Controller\TerminalWebhookController:
+  Kommandhub\ShippingSW\Webhook\Controller\WebhookController:
     public: true
     calls:
       - [setContainer, ['@service_container']]
@@ -165,5 +189,8 @@ services:
     public: true
 
   Kommandhub\ShippingSW\Administration\Controller\CarrierController:
+    public: true
+
+  Kommandhub\ShippingSW\Administration\Controller\ProviderController:
     public: true
 

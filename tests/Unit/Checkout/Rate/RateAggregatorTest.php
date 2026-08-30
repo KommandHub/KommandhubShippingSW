@@ -10,7 +10,7 @@ use Kommandhub\ShippingSW\Model\ValueObject\Address;
 use Kommandhub\ShippingSW\Model\ValueObject\Currency;
 use Kommandhub\ShippingSW\Model\ValueObject\Dimensions;
 use Kommandhub\ShippingSW\Model\ValueObject\Weight;
-use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
+use Kommandhub\ShippingSW\Provider\ProviderContextRegistry;
 use Kommandhub\ShippingSW\Provider\ProviderRegistry;
 use Kommandhub\ShippingSW\Provider\ShippingProviderInterface;
 use Kommandhub\ShippingSW\Tests\Support\ArrayRateCache;
@@ -33,7 +33,7 @@ final class RateAggregatorTest extends TestCase
 
         return new RateAggregator(
             new ProviderRegistry([$provider]),
-            new ProviderContextFactory($fakeConfig),
+            new ProviderContextRegistry($fakeConfig, []),
             $cache,
             $fakeConfig,
             new NullLogger(),
@@ -86,6 +86,34 @@ final class RateAggregatorTest extends TestCase
 
         self::assertSame('terminal_africa', $quotes->all()[0]->providerKey);
         self::assertNotSame('fallback', $quotes->all()[0]->providerKey);
+    }
+
+    public function testUnsetAllowListShowsAllCarriers(): void
+    {
+        // No 'allowedCarriers' configured at all → every carrier is offered.
+        $aggregator = $this->aggregator(
+            new MockProvider('terminal_africa'),
+            ['activeProvider' => 'terminal_africa'],
+            new ArrayRateCache(),
+        );
+
+        $quotes = $aggregator->quote($this->request(), 'sc-1');
+
+        $codes = array_map(static fn ($q) => $q->carrierCode, $quotes->all());
+        self::assertContains('mock_express', $codes);
+        self::assertContains('mock_standard', $codes);
+    }
+
+    public function testEmptyAllowListShowsAllCarriers(): void
+    {
+        // Explicitly-empty allow-list behaves the same as unset.
+        $aggregator = $this->aggregator(
+            new MockProvider('terminal_africa'),
+            ['activeProvider' => 'terminal_africa', 'allowedCarriers' => []],
+            new ArrayRateCache(),
+        );
+
+        self::assertCount(2, $aggregator->quote($this->request(), 'sc-1'));
     }
 
     public function testAllowListFiltersCarriersBeforeCheckout(): void

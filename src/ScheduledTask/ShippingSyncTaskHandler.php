@@ -9,7 +9,7 @@ use Kommandhub\ShippingSW\DataAbstractionLayer\ShipmentGateway;
 use Kommandhub\ShippingSW\Model\Shipment\Shipment;
 use Kommandhub\ShippingSW\Model\Tracking\TrackingStatus;
 use Kommandhub\ShippingSW\Provider\Exception\ProviderException;
-use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
+use Kommandhub\ShippingSW\Provider\ProviderContextResolver;
 use Kommandhub\ShippingSW\Provider\ProviderRegistry;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\Context;
@@ -32,7 +32,7 @@ class ShippingSyncTaskHandler extends ScheduledTaskHandler
         LoggerInterface $logger,
         private readonly ShipmentGateway $shipmentGateway,
         private readonly ProviderRegistry $registry,
-        private readonly ProviderContextFactory $contextFactory,
+        private readonly ProviderContextResolver $contextFactory,
         private readonly TrackingPipeline $pipeline,
         private readonly LoggerInterface $pluginLogger,
     ) {
@@ -53,7 +53,7 @@ class ShippingSyncTaskHandler extends ScheduledTaskHandler
 
             try {
                 $provider = $this->registry->get($shipment->getProviderKey());
-                $providerContext = $this->contextFactory->forSalesChannel($shipment->getSalesChannelId());
+                $providerContext = $this->contextFactory->forProvider($shipment->getProviderKey(), $shipment->getSalesChannelId());
 
                 $canonical = new Shipment(
                     providerKey: $shipment->getProviderKey(),

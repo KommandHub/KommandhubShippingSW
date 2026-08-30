@@ -6,7 +6,7 @@ namespace Kommandhub\ShippingSW\Checkout\Shipment\Handler;
 
 use Kommandhub\ShippingSW\Checkout\Shipment\Message\GenerateLabelMessage;
 use Kommandhub\ShippingSW\DataAbstractionLayer\ShipmentGateway;
-use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
+use Kommandhub\ShippingSW\Provider\ProviderContextResolver;
 use Kommandhub\ShippingSW\Provider\ProviderRegistry;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\Context;
@@ -20,7 +20,7 @@ final class GenerateLabelHandler
 {
     public function __construct(
         private readonly ProviderRegistry $registry,
-        private readonly ProviderContextFactory $contextFactory,
+        private readonly ProviderContextResolver $contextFactory,
         private readonly ShipmentGateway $gateway,
         private readonly LoggerInterface $logger,
     ) {
@@ -38,7 +38,7 @@ final class GenerateLabelHandler
         }
 
         $provider = $this->registry->get($shipment->getProviderKey());
-        $providerContext = $this->contextFactory->forSalesChannel($shipment->getSalesChannelId());
+        $providerContext = $this->contextFactory->forProvider($shipment->getProviderKey(), $shipment->getSalesChannelId());
 
         $label = $provider->generateLabel($shipment->getProviderShipmentId(), $providerContext);
 

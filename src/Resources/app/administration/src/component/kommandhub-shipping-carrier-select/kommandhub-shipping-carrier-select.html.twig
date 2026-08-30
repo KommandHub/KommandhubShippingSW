@@ -11,6 +11,15 @@
             :placeholder="$tc('kommandhub-shipping.config.allowedCarriers.placeholder')"
         />
 
+        <sw-button
+            size="small"
+            class="sw-mt-2"
+            :isLoading="isLoading"
+            @click="refresh"
+        >
+            {{ $tc('kommandhub-shipping.config.allowedCarriers.refresh') }}
+        </sw-button>
+
         <sw-alert v-if="errorMessage" variant="warning" class="sw-mt-2">
             {{ errorMessage }}
         </sw-alert>

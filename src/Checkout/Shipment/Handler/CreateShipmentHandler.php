@@ -6,7 +6,7 @@ namespace Kommandhub\ShippingSW\Checkout\Shipment\Handler;
 
 use Kommandhub\ShippingSW\Checkout\Shipment\Message\CreateShipmentMessage;
 use Kommandhub\ShippingSW\DataAbstractionLayer\ShipmentGateway;
-use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
+use Kommandhub\ShippingSW\Provider\ProviderContextResolver;
 use Kommandhub\ShippingSW\Provider\ProviderRegistry;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\Context;
@@ -23,7 +23,7 @@ final class CreateShipmentHandler
 {
     public function __construct(
         private readonly ProviderRegistry $registry,
-        private readonly ProviderContextFactory $contextFactory,
+        private readonly ProviderContextResolver $contextFactory,
         private readonly ShipmentGateway $gateway,
         private readonly LoggerInterface $logger,
     ) {
@@ -41,7 +41,7 @@ final class CreateShipmentHandler
         }
 
         $provider = $this->registry->get($request->providerKey);
-        $providerContext = $this->contextFactory->forSalesChannel($message->salesChannelId);
+        $providerContext = $this->contextFactory->forProvider($message->request->providerKey, $message->salesChannelId);
 
         $shipment = $provider->createShipment($request, $providerContext);
 

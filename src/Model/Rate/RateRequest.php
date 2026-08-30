@@ -17,6 +17,11 @@ use Kommandhub\ShippingSW\Model\ValueObject\Weight;
  */
 final readonly class RateRequest
 {
+    /**
+     * @param list<string> $itemNames labels of the goods being shipped, used to
+     *                                 build a human parcel description for
+     *                                 providers that require one (e.g. TShip)
+     */
     public function __construct(
         public Address $origin,
         public Address $destination,
@@ -24,6 +29,7 @@ final readonly class RateRequest
         public Dimensions $dimensions,
         public Currency $currency,
         public ?Money $declaredValue = null,
+        public array $itemNames = [],
     ) {
     }
 }

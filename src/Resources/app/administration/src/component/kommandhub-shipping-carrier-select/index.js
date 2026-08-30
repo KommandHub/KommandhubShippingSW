@@ -94,5 +94,24 @@ Component.register('kommandhub-shipping-carrier-select', {
                 this.isLoading = false;
             }
         },
+
+        async refresh() {
+            const { provider } = this.resolveProviderContext();
+            if (!provider) {
+                return;
+            }
+
+            this.isLoading = true;
+            this.errorMessage = null;
+            try {
+                // Re-sync from the provider API into the DB, then show the result.
+                const response = await this.carrierApiService.refresh(provider);
+                this.carriers = response.carriers ?? [];
+            } catch (error) {
+                this.errorMessage = error?.message ?? 'Failed to refresh carriers';
+            } finally {
+                this.isLoading = false;
+            }
+        },
     },
 });

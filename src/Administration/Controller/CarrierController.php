@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace Kommandhub\ShippingSW\Administration\Controller;
 
 use Kommandhub\ShippingSW\Model\Carrier\Carrier;
-use Kommandhub\ShippingSW\Provider\Capability;
-use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
-use Kommandhub\ShippingSW\Provider\ProviderRegistry;
+use Kommandhub\ShippingSW\Model\Carrier\CarrierCollection;
+use Kommandhub\ShippingSW\Provider\Catalog\CarrierCatalog;
+use Kommandhub\ShippingSW\Provider\Catalog\CarrierCatalogSynchronizer;
+use Shopware\Core\Framework\Context;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Admin API that powers the "allowed carriers" config component: given the
- * provider the owner selected (and the sales channel), it returns that
- * provider's carrier catalogue for the owner to filter down.
+ * Admin API powering the "allowed carriers" config component.
+ *
+ *  - GET  reads the prefetched catalogue from the DB (no provider API call, so
+ *         the config page loads instantly).
+ *  - POST refresh re-syncs one provider on demand (the "Refresh" button), for
+ *         when the owner just added credentials or a carrier changed.
  *
  * `_acl: shipping.manage` is the real gate.
  */
@@ -24,8 +28,8 @@ use Symfony\Component\Routing\Attribute\Route;
 class CarrierController
 {
     public function __construct(
-        private readonly ProviderRegistry $registry,
-        private readonly ProviderContextFactory $contextFactory,
+        private readonly CarrierCatalog $catalog,
+        private readonly CarrierCatalogSynchronizer $synchronizer,
     ) {
     }
 
@@ -34,27 +38,39 @@ class CarrierController
         name: 'api.action.kommandhub_shipping.carriers',
         methods: ['GET'],
     )]
-    public function list(Request $request): JsonResponse
+    public function list(Request $request, Context $context): JsonResponse
     {
         $providerKey = (string) $request->query->get('provider', '');
-        $salesChannelId = $request->query->get('salesChannelId');
-        $salesChannelId = \is_string($salesChannelId) && '' !== $salesChannelId ? $salesChannelId : null;
-
-        if ('' === $providerKey || !$this->registry->has($providerKey)) {
+        if ('' === $providerKey) {
             return new JsonResponse(['carriers' => []]);
         }
 
-        $provider = $this->registry->get($providerKey);
-        if (!$provider->supports(Capability::LIST_CARRIERS)) {
+        return $this->respond($this->catalog->forProvider($providerKey, $context));
+    }
+
+    #[Route(
+        path: '/api/_action/kommandhub-shipping/carriers/refresh',
+        name: 'api.action.kommandhub_shipping.carriers.refresh',
+        methods: ['POST'],
+    )]
+    public function refresh(Request $request, Context $context): JsonResponse
+    {
+        $providerKey = (string) $request->request->get('provider', '');
+        if ('' === $providerKey) {
             return new JsonResponse(['carriers' => []]);
         }
 
         try {
-            $carriers = $provider->listCarriers($this->contextFactory->forSalesChannel($salesChannelId));
+            $carriers = $this->synchronizer->sync($providerKey, $context);
         } catch (\Throwable $e) {
             return new JsonResponse(['carriers' => [], 'error' => $e->getMessage()], Response::HTTP_BAD_GATEWAY);
         }
 
+        return $this->respond($carriers);
+    }
+
+    private function respond(CarrierCollection $carriers): JsonResponse
+    {
         return new JsonResponse(['carriers' => array_map(static fn (Carrier $c): array => [
             'code' => $c->code,
             'name' => $c->name,

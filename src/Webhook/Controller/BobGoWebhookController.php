@@ -6,7 +6,7 @@ namespace Kommandhub\ShippingSW\Webhook\Controller;
 
 use Kommandhub\ShippingSW\Checkout\Tracking\TrackingPipeline;
 use Kommandhub\ShippingSW\Provider\BobGo\BobGoMapper;
-use Kommandhub\ShippingSW\Provider\ProviderContextFactory;
+use Kommandhub\ShippingSW\Provider\ProviderContextResolver;
 use Kommandhub\ShippingSW\Provider\ProviderRegistry;
 use Psr\Log\LoggerInterface;
 use Shopware\Core\Framework\Context;
@@ -29,7 +29,7 @@ class BobGoWebhookController extends StorefrontController
 
     public function __construct(
         private readonly ProviderRegistry $registry,
-        private readonly ProviderContextFactory $contextFactory,
+        private readonly ProviderContextResolver $contextFactory,
         private readonly BobGoMapper $mapper,
         private readonly TrackingPipeline $pipeline,
         private readonly LoggerInterface $logger,
@@ -50,7 +50,7 @@ class BobGoWebhookController extends StorefrontController
         $body = $request->getContent();
         $signature = (string) $request->headers->get(self::SIGNATURE_HEADER, '');
         $provider = $this->registry->get(BobGoMapper::PROVIDER_KEY);
-        $context = $this->contextFactory->forSalesChannel(null);
+        $context = $this->contextFactory->forProvider(BobGoMapper::PROVIDER_KEY, null);
 
         if (!$provider->verifyWebhook($body, $signature, $context)) {
             $this->logger->warning('Rejected Bob Go webhook: invalid signature');
